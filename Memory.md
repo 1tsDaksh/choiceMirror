@@ -9,7 +9,7 @@
 - **Repository:** https://github.com/1tsDaksh/choiceMirror
 - **Event:** SLAY HACKS 2026
 - **Deadline (Devpost displayed):** 2026-12-07 17:00 EST / 22:00 GMT
-- **Current status:** GitHub project initialized; documentation in preparation; application functionality not yet built.
+- **Current status:** GitHub project initialized; all six planning documents committed; application functionality not yet built.
 - **Tracking:** https://github.com/1tsDaksh/choiceMirror/issues/1
 
 ## 2. Core proposition
@@ -45,7 +45,7 @@ Real third-party account actions; purchases; payments; arbitrary public-site cra
 | 2026-11-13 | Verified accessible repository and write permissions; repo initially empty | GitHub repository |
 | 2026-11-13 | Created original README and project outline on `main` | Initial commit `c18a11249b98873cd2e2c0d5b9840458deda853f` |
 | 2026-11-13 | Opened project kickoff checklist | GitHub issue #1 |
-| 2026-11-13 | Drafted initial specifications and phase plan | Six root Markdown files, subject to successful commit |
+| 2026-11-13 | Committed initial specifications and phase plan | Six root Markdown files on main |
 
 ## 8. Known unknowns / verification
 1. **Eligibility:** public event listing specifies students only and age of majority. Check actual participant status.
@@ -69,7 +69,7 @@ Real third-party account actions; purchases; payments; arbitrary public-site cra
 | D-004 | 2026-11-13 | Preserve unknown/failed states visibly | Responsible AI and scientific honesty | Proposed |
 
 ## 11. Change log
-- **2026-11-13 v0.1:** Initialized repository; established working product hypothesis and six-document planning framework.
+- **2026-11-13 v0.1:** Initialized repository; committed six planning documents and established product scope, phase gates and decisions.
 
 ## 12. Update template
 After a meaningful work session, update:
