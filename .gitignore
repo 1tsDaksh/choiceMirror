@@ -1,1 +1,14 @@
 .worktrees/
+.superpowers/
+
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.log
+
+.env
+.env.local
+.env.*.local
