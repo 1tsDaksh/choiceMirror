@@ -266,6 +266,19 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/storage:
+    dependencies:
+      '@choicemirror/contracts':
+        specifier: workspace:^
+        version: link:../contracts
+    devDependencies:
+      '@types/node':
+        specifier: ^25.9.9
+        version: 25.9.9
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
 packages:
 
   '@alloc/quick-lru@5.3.0':
