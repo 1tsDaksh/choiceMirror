@@ -1,4 +1,4 @@
-import type { Goal, Scenario } from "@choicemirror/contracts";
+import type { Goal, Scenario } from "./scenario";
 
 export type FlowDefinition = {
   scenarioId: Scenario["id"];
