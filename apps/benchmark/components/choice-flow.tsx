@@ -58,7 +58,9 @@ export function ChoiceFlow({ scenario, seed }: ChoiceFlowProps) {
   const actions = selection ? flow.goals[selection.goalId] ?? [] : [];
   const currentAction = actions[selection?.stepIndex ?? 0];
   const progress = selection
-    ? Math.round(((selection.stepIndex + 1) / actions.length) * 100)
+    ? selection.complete
+      ? 100
+      : Math.round((selection.stepIndex / actions.length) * 100)
     : 0;
 
   return (
