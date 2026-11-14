@@ -1,6 +1,6 @@
 # ChoiceMirror — Living Project Memory
 
-**Last updated:** 2026-11-13 · **Version:** 0.1
+**Last updated:** 2026-11-14 · **Version:** 0.3
 **Instruction for contributors/AI assistants:** Read this file at the start of each work session. Update it after each completed phase, design/architecture decision, blocker resolution, or notable change. Keep facts, assumptions and planned work clearly distinct; never rewrite history silently.
 
 ## 1. Canonical identity
@@ -9,7 +9,7 @@
 - **Repository:** https://github.com/1tsDaksh/choiceMirror
 - **Event:** SLAY HACKS 2026
 - **Deadline (Devpost displayed):** 2026-12-07 17:00 EST / 22:00 GMT
-- **Current status:** GitHub project initialized; all six planning documents committed; application functionality not yet built.
+- **Current status:** Phase 1 foundation implemented on `feat/phase-1-foundation`: runnable web and benchmark apps, four controlled fixtures, unit/E2E tests, CI workflow, and setup documentation. AI navigation, automated browser runs, stored comparisons, metrics, and evidence capture remain unbuilt.
 - **Tracking:** https://github.com/1tsDaksh/choiceMirror/issues/1
 
 ## 2. Core proposition
@@ -46,18 +46,24 @@ Real third-party account actions; purchases; payments; arbitrary public-site cra
 | 2026-11-13 | Created original README and project outline on `main` | Initial commit `c18a11249b98873cd2e2c0d5b9840458deda853f` |
 | 2026-11-13 | Opened project kickoff checklist | GitHub issue #1 |
 | 2026-11-13 | Committed initial specifications and phase plan | Six root Markdown files on main |
+| 2026-11-14 | Added strict pnpm/TypeScript workspace and shared Zod scenario contracts | 8 contract/catalog unit tests |
+| 2026-11-14 | Added web launcher, comparison states, APIs, and four controlled benchmark fixtures | 5 flow-definition and 2 API unit tests |
+| 2026-11-14 | Added two-server Playwright acceptance coverage and CI workflow | 5 E2E tests covering 8 goal paths, reset, keyboard use, 404s, and external requests |
+| 2026-11-14 | Verified the Phase 1 exit gate | typecheck, lint, 15 unit tests, 5 E2E tests, and both production builds passed locally |
+| 2026-11-14 | Completed review-fix pass: 3 Important and 10 Minor findings fixed test-first, 4 recommendations adopted, 0 minors deferred | fresh run: typecheck, lint, 24 unit tests (5 files), 8 E2E tests, both production builds passed |
+| 2026-11-14 | Moved six spec documents into `docs/` and updated all references | `git mv` to `docs/`; README links, `docs/Architecture.md` tree, and plan file paths updated |
 
 ## 8. Known unknowns / verification
 1. **Eligibility:** public event listing specifies students only and age of majority. Check actual participant status.
 2. **Rubric conflict:** event rules give Innovation 25, Technical 25, Impact 20, AI & Responsible Use 15, UX & Presentation 15; public event judging area may show different categories/weights. Confirm governing rubric with organisers. Build to satisfy both.
 3. Confirm maximum team size, whether original work during event window is required and any AI/disclosure rules.
 4. Model provider, usage caps, hosting and team ownership still undecided.
-5. Current repo contains no working application; mark features complete only after tested implementation.
+5. Current repository has a tested Phase 1 foundation but no AI, Playwright journey execution, comparison storage, metrics, or screenshots; mark later features complete only after tested implementation.
 
 ## 9. Immediate next actions
-- Review and finalize the six docs.
+- Complete Phase 2 isolated Playwright execution, event schemas, policy guards, and reproducible paired traces.
 - Resolve event eligibility and rubric.
-- Start Phase 1 scaffold and benchmark fixture.
+- Select a model provider and usage cap before Phase 3.
 - Record each PR and tested milestone here.
 
 ## 10. Decision log
@@ -67,8 +73,14 @@ Real third-party account actions; purchases; payments; arbitrary public-site cra
 | D-002 | 2026-11-13 | Prioritize paired browser evidence over generic chat | Innovation and demonstrated technical substance | Proposed |
 | D-003 | 2026-11-13 | Controlled fixture first | Reliability, safety, realistic delivery | Proposed |
 | D-004 | 2026-11-13 | Preserve unknown/failed states visibly | Responsible AI and scientific honesty | Proposed |
+| D-005 | 2026-11-14 | Pin TypeScript 6.0.3 | Current typescript-eslint supports TypeScript <6.1 | Confirmed |
+| D-006 | 2026-11-14 | Pin ESLint 9.39.5 | Next 16 lint plugins declare support only through ESLint 9 | Confirmed |
+| D-007 | 2026-11-14 | Server-render the static launcher catalog | Avoids effect-reachable state updates and keeps the retry API path | Confirmed |
+| D-008 | 2026-11-14 | Keep `README.md` at root; move the six spec documents to `docs/` | Owner instruction plus GitHub landing-page convention | Confirmed |
 
 ## 11. Change log
+- **2026-11-14 v0.3:** Review-fix pass on `feat/phase-1-foundation` completed (all 3 Important and 10 Minor findings fixed test-first, 4 recommendations adopted, comparison page keeps status 200 with `noindex` per documented Next 16 streaming behavior); relocated `PRD.md`, `Architecture.md`, `Rules.md`, `Design.md`, `Phases.md`, `Memory.md` into `docs/` and updated every reference. Verified: frozen install, typecheck, lint, 24 unit tests, 8 E2E tests, both production builds.
+- **2026-11-14 v0.2:** Implemented and verified the Phase 1 vertical slice: workspace, contracts, web launcher, four benchmark fixtures, API boundaries, E2E coverage, CI workflow, and setup documentation.
 - **2026-11-13 v0.1:** Initialized repository; committed six planning documents and established product scope, phase gates and decisions.
 
 ## 12. Update template

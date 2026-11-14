@@ -2,43 +2,118 @@
 
 **See both sides of the click.**
 
-ChoiceMirror is a planned AI-powered behavioural UX auditor for **SLAY HACKS 2026**. It compares two opposing user journeys on the same website—for example **join vs leave** or **accept vs reject**—and shows how much friction each requires, backed by inspectable browser evidence.
+ChoiceMirror is an AI-powered behavioural UX auditor for **SLAY HACKS 2026**. It compares opposing user journeys on the same interface—such as **join vs leave** or **accept vs reject**—and is designed to show measurable friction with inspectable browser evidence.
 
-> **Status:** Project initialized; planning and implementation pending. This README does not imply a working application exists.
+> **Current status:** Phase 1 foundation is implemented. The repository runs two local applications and four controlled benchmark fixtures. AI navigation, automated Playwright journeys, stored comparisons, metrics, and evidence capture are **not implemented yet**.
 
-## Why ChoiceMirror?
+## What works now
 
-Static dark-pattern detectors inspect individual screens. ChoiceMirror aims to **run both user goals** with AI-assisted browser navigation, record objective actions and interruptions, and explain measurable choice asymmetry without asserting that a website is unlawful.
+- Accessible scenario launcher on the web app.
+- Four synthetic benchmark fixtures with balanced and asymmetric opposing flows.
+- Manual completion and deterministic reset for every goal.
+- Honest loading, empty, error, and unavailable states.
+- Automated tests covering all eight goal paths, keyboard activation, reset, 404s, and external-request blocking.
 
-## Hackathon MVP (target)
+## Local setup
 
-- Controlled benchmark site with fair and deliberately asymmetric examples.
-- Paired AI journeys: join/leave and accept/reject.
-- Deterministic event traces, screenshots and completion outcomes.
-- Evidence-linked comparison dashboard, cautiously labelled asymmetry score, and replay.
-- Safety controls: sandbox, allowlisted hosts, action limits and no consequential submissions.
+Requirements:
 
-## Project documents
+- Node.js 25 or newer
+- npm (included with Node.js)
+- pnpm 12.18.0
 
-1. [PRD.md](./PRD.md) — requirements, target users, MVP features and acceptance criteria
-2. [Architecture.md](./Architecture.md) — architecture, workflows, stack and folder structure
-3. [Rules.md](./Rules.md) — engineering constraints, safety and anti-patterns
-4. [Phases.md](./Phases.md) — milestone plan and delivery gates
-5. [Design.md](./Design.md) — visual identity, typography, layout and UX system
-6. [Memory.md](./Memory.md) — living decisions, progress, open questions and change log
+From a fresh clone on Windows (PowerShell):
 
-## Devpost
+```powershell
+npm install --global pnpm@12.18.0
+pnpm install --frozen-lockfile
+copy .env.example .env.local
+pnpm dev
+```
 
-[SLAY HACKS 2026](https://slayy-hacks.devpost.com/) · [Official rules](https://slayy-hacks.devpost.com/rules)
+From a fresh clone on macOS or Linux:
 
-**Deadline displayed on Devpost:** 7 December 2026, 5:00 pm EST (10:00 pm GMT). Submit ahead of the deadline.
+```bash
+npm install --global pnpm@12.18.0
+pnpm install --frozen-lockfile
+cp .env.example .env.local
+pnpm dev
+```
 
-**Eligibility check required:** the current public event page says **students only** and **above the local age of majority**, despite broader language elsewhere. Confirm every participant's eligibility directly on Devpost before submission.
+The environment file is optional because safe local defaults are built in.
 
-**Judging discrepancy:** the rules page lists 25/25/20/15/15, while the public *Judging Criteria* section lists 30 innovation / 30 technical / 20 design / 20 presentation & impact. Prepare for both; verify the governing rubric with organizers.
+Open:
 
-## Contribution and integrity
+- Web app: <http://localhost:3000>
+- Controlled benchmark: <http://localhost:3001>
 
-Build original work during the eligible hackathon development window, identify external libraries/models clearly, and demonstrate only features actually implemented. Keep credentials and personal information out of Git history and public evidence.
+To stop both development servers, interrupt the `pnpm dev` process.
 
-**Development setup:** to be added when the first implementation phase creates runnable code.
+### Individual commands
+
+```powershell
+pnpm --filter @choicemirror/web dev
+pnpm --filter @choicemirror/benchmark dev
+pnpm typecheck
+pnpm lint
+pnpm test:unit
+pnpm exec playwright install chromium
+pnpm test:e2e
+pnpm build
+```
+
+`pnpm build` creates production builds for both applications.
+
+## Repository layout
+
+```text
+apps/
+  web/          Comparison launcher and API boundary
+  benchmark/    Local synthetic controlled fixtures
+packages/
+  contracts/    Zod schemas and deterministic scenario catalog
+tests/
+  e2e/          Two-server Playwright acceptance tests
+docs/
+  superpowers/  Implementation plans
+```
+
+## Current limitations
+
+- No AI model or model credentials are used.
+- No browser automation or stored comparison runs exist yet.
+- The **Run comparison** control is intentionally disabled.
+- No third-party websites are visited.
+- No accounts, payments, real consent changes, personal data, or consequential submissions occur.
+- The benchmark uses synthetic local state only.
+- The `seed` query parameter is displayed for reproducibility but does not perturb fixture state yet; flows are deterministic by construction.
+- Phase 1 does not make legal, manipulation, or dark-pattern claims.
+
+## Planned delivery
+
+The detailed milestone plan is in [Phases.md](./docs/Phases.md). Later phases add isolated Playwright execution, a structured AI navigation policy, deterministic metrics, evidence-linked comparison views, and submission materials.
+
+## Design and requirements
+
+Spec documents live in [`docs/`](./docs/):
+
+1. [PRD.md](./docs/PRD.md) — requirements, users, MVP scope, and acceptance criteria
+2. [Architecture.md](./docs/Architecture.md) — intended modules, workflows, and deployment boundaries
+3. [Rules.md](./docs/Rules.md) — engineering, safety, measurement, and scope constraints
+4. [Phases.md](./docs/Phases.md) — milestone plan and delivery gates
+5. [Design.md](./docs/Design.md) — visual identity, typography, layout, and accessibility
+6. [Memory.md](./docs/Memory.md) — decisions, verified progress, blockers, and change log
+
+## External dependencies
+
+Original project code is developed for this repository. The implementation uses clearly attributable open-source dependencies selected in `docs/Architecture.md` and `package.json`, including Next.js, React, Tailwind CSS, Zod, Playwright, Vitest, TypeScript, and ESLint.
+
+## SLAY HACKS 2026
+
+[Event page](https://slayy-hacks.devpost.com/) · [Official rules](https://slayy-hacks.devpost.com/rules)
+
+- **Displayed deadline:** 7 December 2026, 5:00 pm EST (10:00 pm GMT). Submit early.
+- **Eligibility:** the public event page indicates students only and above the local age of majority. Confirm every participant's eligibility on Devpost.
+- **Judging:** the rules page and public judging section display different rubrics. Verify the governing criteria with organizers and prepare for both.
+
+Build original work during the eligible development window, identify external libraries and models clearly, demonstrate only implemented features, and keep credentials and personal information out of Git history and public evidence.

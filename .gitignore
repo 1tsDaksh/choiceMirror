@@ -1,0 +1,15 @@
+.worktrees/
+.superpowers/
+
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.log
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
