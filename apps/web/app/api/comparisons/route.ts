@@ -29,6 +29,8 @@ export async function POST(request: Request): Promise<Response> {
     return invalidRequest();
   }
 
+  // The pair must match the catalog order exactly: Goal A/Goal B mapping is
+  // fixed per scenario, so a reversed but valid pair is rejected as invalid.
   const expectedGoalIds = scenario.goals.map((goal) => goal.id);
   const submittedGoalIds = [...parsed.data.goalIds];
   if (

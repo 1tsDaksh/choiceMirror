@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 
-import {
-  scenarioListSchema,
-  type Scenario,
-} from "@choicemirror/contracts";
+import type { Scenario } from "@choicemirror/contracts";
 
 import { ComparisonState } from "@/components/comparison-state";
 import { RunStatus } from "@/components/run-status";
+import { loadScenarios } from "@/lib/load-scenarios";
 
 type LauncherState =
   | { status: "loading" }
@@ -25,8 +23,12 @@ function benchmarkUrl(path: string): string {
     process.env.NEXT_PUBLIC_BENCHMARK_ORIGIN ?? "http://localhost:3001";
 
   try {
-    const url = new URL(path, configuredOrigin);
-    return `${url.origin}${url.pathname}?seed=phase-1`;
+    const base = new URL(configuredOrigin);
+    const url = new URL(path, base);
+    // A protocol-relative path would resolve to a foreign origin; pin to the
+    // configured benchmark origin so the launcher can never link off-origin.
+    const origin = url.origin === base.origin ? base.origin : "http://localhost:3001";
+    return `${origin}${url.pathname}?seed=phase-1`;
   } catch {
     return `http://localhost:3001${path}?seed=phase-1`;
   }
@@ -44,34 +46,16 @@ export function ScenarioLauncher({
     null,
   );
 
-  const loadScenarios = async () => {
-    try {
-      const response = await fetch("/api/scenarios");
-      if (!response.ok) {
-        throw new Error(`Scenario request failed: ${response.status}`);
-      }
-
-      const payload = scenarioListSchema.safeParse(await response.json());
-      if (!payload.success || payload.data.length === 0) {
-        setState({ status: "empty" });
-        return;
-      }
-
-      setState({ status: "ready", scenarios: payload.data });
-    } catch {
-      setState({ status: "error" });
-    }
-  };
-
   const retryScenarios = () => {
     setState({ status: "loading" });
-    void loadScenarios();
+    void loadScenarios().then((result) => setState(result));
   };
 
   if (state.status === "loading") {
     return (
       <ComparisonState
         kind="loading"
+        level={2}
         title="Loading controlled scenarios"
         description="Retrieving the benchmark catalog."
       />
@@ -82,6 +66,7 @@ export function ScenarioLauncher({
     return (
       <ComparisonState
         kind="error"
+        level={2}
         title="Scenarios are unavailable"
         description="The local scenario catalog could not be loaded."
         action={
@@ -101,6 +86,7 @@ export function ScenarioLauncher({
     return (
       <ComparisonState
         kind="empty"
+        level={2}
         title="No controlled scenarios"
         description="The local benchmark catalog is empty."
       />
@@ -139,14 +125,19 @@ export function ScenarioLauncher({
                 <span className="font-mono text-xs text-secondary-text">
                   {scenario.id}
                 </span>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    scenario.variant === "balanced"
-                      ? "bg-journey-a/15 text-journey-a"
-                      : "bg-journey-b/15 text-journey-b"
-                  }`}
-                >
-                  {scenario.variant}
+                <span className="flex items-center gap-2">
+                  <span className="rounded-full border border-white/10 bg-elevated px-2.5 py-1 text-xs font-semibold text-secondary-text">
+                    Controlled benchmark
+                  </span>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      scenario.variant === "balanced"
+                        ? "bg-journey-a/15 text-journey-a"
+                        : "bg-journey-b/15 text-journey-b"
+                    }`}
+                  >
+                    {scenario.variant}
+                  </span>
                 </span>
               </span>
               <span className="font-semibold">{scenario.title}</span>

@@ -29,7 +29,7 @@ export const scenarioSchema = z.object({
   id: scenarioIdSchema,
   title: z.string().min(1),
   description: z.string().min(1),
-  benchmarkPath: z.string().startsWith("/"),
+  benchmarkPath: z.string().regex(/^\/(?!\/)/, "must be root-relative"),
   kind: z.enum(["membership", "consent"]),
   variant: z.enum(["balanced", "asymmetric"]),
   goals: z.array(goalSchema).length(2),

@@ -8,6 +8,7 @@ export default defineConfig({
       "**/.next/**",
       "**/playwright-report/**",
       "**/test-results/**",
+      ".worktrees/**",
       "tests/e2e/**",
     ],
   },

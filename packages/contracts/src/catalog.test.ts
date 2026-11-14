@@ -50,6 +50,26 @@ describe("scenario catalog", () => {
     ).toEqual(["1/1", "1/1"]);
   });
 
+  it("gives both variants of a kind the same goal pair", () => {
+    for (const kind of ["membership", "consent"] as const) {
+      const balanced = catalog.scenarios.find(
+        (scenario) => scenario.kind === kind && scenario.variant === "balanced",
+      );
+      const asymmetric = catalog.scenarios.find(
+        (scenario) =>
+          scenario.kind === kind && scenario.variant === "asymmetric",
+      );
+
+      if (!balanced || !asymmetric) {
+        throw new Error(`Missing ${kind} variant pair`);
+      }
+
+      expect(asymmetric.goals.map(({ id, label }) => ({ id, label }))).toEqual(
+        balanced.goals.map(({ id, label }) => ({ id, label })),
+      );
+    }
+  });
+
   it("makes asymmetric leave and reject paths frictionally harder", () => {
     const membership = catalog.getScenario?.("membership-asymmetric");
     const consent = catalog.getScenario?.("consent-asymmetric");

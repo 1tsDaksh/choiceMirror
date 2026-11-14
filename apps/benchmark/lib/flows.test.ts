@@ -53,4 +53,55 @@ describe("benchmark flow definitions", () => {
   it("does not define a flow for an unknown scenario", () => {
     expect(getFlow("unknown-scenario")).toBeUndefined();
   });
+
+  it("differs across variants only in the documented hard path", () => {
+    for (const kind of ["membership", "consent"] as const) {
+      const balanced = getFlow(`${kind}-balanced`);
+      const asymmetric = getFlow(`${kind}-asymmetric`);
+
+      if (!balanced || !asymmetric) {
+        throw new Error(`Missing ${kind} flow pair`);
+      }
+
+      expect(asymmetric.startTitle).toBe(balanced.startTitle);
+      expect(asymmetric.startDescription).toBe(balanced.startDescription);
+
+      const asymmetricScenario = scenarios.find(
+        (scenario) =>
+          scenario.kind === kind && scenario.variant === "asymmetric",
+      );
+      if (!asymmetricScenario) {
+        throw new Error(`Missing ${kind} asymmetric scenario`);
+      }
+
+      const hardGoalId = asymmetricScenario.expectedActions.find(
+        (action) => action.count > 1,
+      )?.goalId;
+      const easyGoalId = asymmetricScenario.expectedActions.find(
+        (action) => action.count === 1,
+      )?.goalId;
+      if (!hardGoalId || !easyGoalId) {
+        throw new Error(`Missing ${kind} goal counts`);
+      }
+
+      // The easy path is byte-identical across variants.
+      expect(asymmetric.goals[easyGoalId]).toEqual(balanced.goals[easyGoalId]);
+      expect(asymmetric.goals[easyGoalId]).toHaveLength(1);
+      // Only the documented hard path carries extra friction.
+      expect(asymmetric.goals[hardGoalId]).toHaveLength(3);
+    }
+  });
+
+  it("matches every catalog action count to its flow length", () => {
+    for (const scenario of scenarios) {
+      const flow = getFlow(scenario.id);
+      if (!flow) {
+        throw new Error(`Missing flow for ${scenario.id}`);
+      }
+
+      for (const { goalId, count } of scenario.expectedActions) {
+        expect(flow.goals[goalId]).toHaveLength(count);
+      }
+    }
+  });
 });

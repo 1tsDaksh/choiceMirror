@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { scenarios } from "./catalog";
 import * as contract from "./scenario";
 
 describe("scenario contracts", () => {
@@ -25,34 +26,23 @@ describe("scenario contracts", () => {
     expect(missingScenario?.success).toBe(false);
   });
 
-  it("validates every catalog scenario against the shared schema", () => {
-    const parsedScenarios = contract.scenarioListSchema?.safeParse([
-      {
-        id: "membership-balanced",
-        title: "Join vs leave",
-        description: "Two equal starting choices in a local synthetic workspace.",
-        benchmarkPath: "/membership-balanced",
-        kind: "membership",
-        variant: "balanced",
-        goals: [
-          {
-            id: "join",
-            label: "Join",
-            description: "Join the synthetic workspace.",
-          },
-          {
-            id: "leave",
-            label: "Leave",
-            description: "Leave the synthetic workspace.",
-          },
-        ],
-        expectedActions: [
-          { goalId: "join", count: 1 },
-          { goalId: "leave", count: 1 },
-        ],
-      },
-    ]);
+  it("validates the real catalog against the shared schema", () => {
+    const parsedScenarios = contract.scenarioListSchema?.safeParse(scenarios);
 
     expect(parsedScenarios?.success).toBe(true);
+  });
+
+  it("rejects protocol-relative benchmark paths", () => {
+    const scenario = scenarios[0];
+    if (!scenario) {
+      throw new Error("catalog is empty");
+    }
+
+    const result = contract.scenarioSchema?.safeParse({
+      ...scenario,
+      benchmarkPath: "//evil.example/choice",
+    });
+
+    expect(result?.success).toBe(false);
   });
 });
