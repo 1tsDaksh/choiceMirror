@@ -1,6 +1,6 @@
 # ChoiceMirror — Living Project Memory
 
-**Last updated:** 2026-11-14 · **Version:** 0.2
+**Last updated:** 2026-11-14 · **Version:** 0.3
 **Instruction for contributors/AI assistants:** Read this file at the start of each work session. Update it after each completed phase, design/architecture decision, blocker resolution, or notable change. Keep facts, assumptions and planned work clearly distinct; never rewrite history silently.
 
 ## 1. Canonical identity
@@ -50,6 +50,8 @@ Real third-party account actions; purchases; payments; arbitrary public-site cra
 | 2026-11-14 | Added web launcher, comparison states, APIs, and four controlled benchmark fixtures | 5 flow-definition and 2 API unit tests |
 | 2026-11-14 | Added two-server Playwright acceptance coverage and CI workflow | 5 E2E tests covering 8 goal paths, reset, keyboard use, 404s, and external requests |
 | 2026-11-14 | Verified the Phase 1 exit gate | typecheck, lint, 15 unit tests, 5 E2E tests, and both production builds passed locally |
+| 2026-11-14 | Completed review-fix pass: 3 Important and 10 Minor findings fixed test-first, 4 recommendations adopted, 0 minors deferred | fresh run: typecheck, lint, 24 unit tests (5 files), 8 E2E tests, both production builds passed |
+| 2026-11-14 | Moved six spec documents into `docs/` and updated all references | `git mv` to `docs/`; README links, `docs/Architecture.md` tree, and plan file paths updated |
 
 ## 8. Known unknowns / verification
 1. **Eligibility:** public event listing specifies students only and age of majority. Check actual participant status.
@@ -74,8 +76,10 @@ Real third-party account actions; purchases; payments; arbitrary public-site cra
 | D-005 | 2026-11-14 | Pin TypeScript 6.0.3 | Current typescript-eslint supports TypeScript <6.1 | Confirmed |
 | D-006 | 2026-11-14 | Pin ESLint 9.39.5 | Next 16 lint plugins declare support only through ESLint 9 | Confirmed |
 | D-007 | 2026-11-14 | Server-render the static launcher catalog | Avoids effect-reachable state updates and keeps the retry API path | Confirmed |
+| D-008 | 2026-11-14 | Keep `README.md` at root; move the six spec documents to `docs/` | Owner instruction plus GitHub landing-page convention | Confirmed |
 
 ## 11. Change log
+- **2026-11-14 v0.3:** Review-fix pass on `feat/phase-1-foundation` completed (all 3 Important and 10 Minor findings fixed test-first, 4 recommendations adopted, comparison page keeps status 200 with `noindex` per documented Next 16 streaming behavior); relocated `PRD.md`, `Architecture.md`, `Rules.md`, `Design.md`, `Phases.md`, `Memory.md` into `docs/` and updated every reference. Verified: frozen install, typecheck, lint, 24 unit tests, 8 E2E tests, both production builds.
 - **2026-11-14 v0.2:** Implemented and verified the Phase 1 vertical slice: workspace, contracts, web launcher, four benchmark fixtures, API boundaries, E2E coverage, CI workflow, and setup documentation.
 - **2026-11-13 v0.1:** Initialized repository; committed six planning documents and established product scope, phase gates and decisions.
 

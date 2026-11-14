@@ -22,12 +22,21 @@ Requirements:
 - npm (included with Node.js)
 - pnpm 12.18.0
 
-From a fresh clone:
+From a fresh clone on Windows (PowerShell):
 
 ```powershell
 npm install --global pnpm@12.18.0
 pnpm install --frozen-lockfile
 copy .env.example .env.local
+pnpm dev
+```
+
+From a fresh clone on macOS or Linux:
+
+```bash
+npm install --global pnpm@12.18.0
+pnpm install --frozen-lockfile
+cp .env.example .env.local
 pnpm dev
 ```
 
@@ -77,24 +86,27 @@ docs/
 - No third-party websites are visited.
 - No accounts, payments, real consent changes, personal data, or consequential submissions occur.
 - The benchmark uses synthetic local state only.
+- The `seed` query parameter is displayed for reproducibility but does not perturb fixture state yet; flows are deterministic by construction.
 - Phase 1 does not make legal, manipulation, or dark-pattern claims.
 
 ## Planned delivery
 
-The detailed milestone plan is in [Phases.md](./Phases.md). Later phases add isolated Playwright execution, a structured AI navigation policy, deterministic metrics, evidence-linked comparison views, and submission materials.
+The detailed milestone plan is in [Phases.md](./docs/Phases.md). Later phases add isolated Playwright execution, a structured AI navigation policy, deterministic metrics, evidence-linked comparison views, and submission materials.
 
 ## Design and requirements
 
-1. [PRD.md](./PRD.md) — requirements, users, MVP scope, and acceptance criteria
-2. [Architecture.md](./Architecture.md) — intended modules, workflows, and deployment boundaries
-3. [Rules.md](./Rules.md) — engineering, safety, measurement, and scope constraints
-4. [Phases.md](./Phases.md) — milestone plan and delivery gates
-5. [Design.md](./Design.md) — visual identity, typography, layout, and accessibility
-6. [Memory.md](./Memory.md) — decisions, verified progress, blockers, and change log
+Spec documents live in [`docs/`](./docs/):
+
+1. [PRD.md](./docs/PRD.md) — requirements, users, MVP scope, and acceptance criteria
+2. [Architecture.md](./docs/Architecture.md) — intended modules, workflows, and deployment boundaries
+3. [Rules.md](./docs/Rules.md) — engineering, safety, measurement, and scope constraints
+4. [Phases.md](./docs/Phases.md) — milestone plan and delivery gates
+5. [Design.md](./docs/Design.md) — visual identity, typography, layout, and accessibility
+6. [Memory.md](./docs/Memory.md) — decisions, verified progress, blockers, and change log
 
 ## External dependencies
 
-Original project code is developed for this repository. The implementation uses clearly attributable open-source dependencies selected in `Architecture.md` and `package.json`, including Next.js, React, Tailwind CSS, Zod, Playwright, Vitest, TypeScript, and ESLint.
+Original project code is developed for this repository. The implementation uses clearly attributable open-source dependencies selected in `docs/Architecture.md` and `package.json`, including Next.js, React, Tailwind CSS, Zod, Playwright, Vitest, TypeScript, and ESLint.
 
 ## SLAY HACKS 2026
 

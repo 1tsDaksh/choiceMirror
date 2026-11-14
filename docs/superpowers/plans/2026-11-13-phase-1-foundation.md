@@ -8,7 +8,7 @@
 
 **Tech Stack:** pnpm, strict TypeScript, Next.js App Router, React, Tailwind CSS, Zod, Vitest, Playwright, ESLint, GitHub Actions.
 
-**Spec:** `PRD.md`, `Architecture.md`, `Design.md`, `Rules.md`, and `Phases.md` (Phase 1 only).
+**Spec:** `docs/PRD.md`, `docs/Architecture.md`, `docs/Design.md`, `docs/Rules.md`, and `docs/Phases.md` (Phase 1 only).
 
 ## Global Constraints
 
@@ -17,7 +17,7 @@
 - Preserve the navy/teal/violet evidence-first visual system, keyboard access, visible focus, and reduced-motion support.
 - Do not claim that automated comparisons or AI navigation work in Phase 1.
 - Use small modules with separately testable catalog, flow, UI, and API responsibilities.
-- Update `Memory.md` and `Phases.md` only with verified results.
+- Update `docs/Memory.md` and `docs/Phases.md` only with verified results.
 
 ## Review Focus
 
@@ -153,7 +153,7 @@ git commit -m "feat: add scenario launcher and comparison states"
 
 **Files:**
 - Create: `playwright.config.ts`, `tests/e2e/phase-1.spec.ts`, `.github/workflows/ci.yml`
-- Modify: `package.json`, `README.md`, `Phases.md`, `Memory.md`
+- Modify: `package.json`, `README.md`, `docs/Phases.md`, `docs/Memory.md`
 - Modify: `.env.example`
 
 **Interfaces:**
@@ -185,6 +185,6 @@ Record completed files, commands, test results, remaining Phase 2 work, and unre
 - [x] **Step 6: Commit**
 
 ```bash
-git add package.json pnpm-lock.yaml playwright.config.ts tests .github README.md Phases.md Memory.md .env.example
+git add package.json pnpm-lock.yaml playwright.config.ts tests .github README.md docs/Phases.md docs/Memory.md .env.example
 git commit -m "test: verify phase 1 vertical slice"
 ```

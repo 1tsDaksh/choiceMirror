@@ -53,12 +53,13 @@ flowchart TD
 ```text
 choiceMirror/
 ├── README.md
-├── PRD.md
-├── Architecture.md
-├── Rules.md
-├── Phases.md
-├── Design.md
-├── Memory.md
+├── docs/
+│   ├── PRD.md
+│   ├── Architecture.md
+│   ├── Rules.md
+│   ├── Phases.md
+│   ├── Design.md
+│   └── Memory.md
 ├── package.json
 ├── pnpm-workspace.yaml
 ├── .env.example

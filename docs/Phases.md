@@ -18,7 +18,7 @@ Each phase produces a demonstrable vertical slice, tests, screenshots or other v
 - Create homepage with fixture selection; comparison view with real loading/empty/error states.
 - Add .env.example, gitignore, formatting/lint, minimal CI.
 - Create simple benchmark app with two paired flows, seeded reset behaviour.
-**Exit gate evidence (2026-11-14):** frozen-lockfile install succeeds; strict typecheck passes for contracts and both apps; lint passes for both apps; 15 unit tests pass; 5 Playwright tests pass against ports 3000 and 3001; production builds succeed for both apps. Fresh-clone setup is documented in `README.md`.
+**Exit gate evidence (2026-11-14):** frozen-lockfile install succeeds; strict typecheck passes workspace-wide; lint passes workspace-wide; 24 unit tests pass across 5 files; 8 Playwright tests pass against ports 3000 and 3001 (keyboard, focus, malformed-ID 404, honest states, fixture index); production builds succeed for both apps. Fresh-clone setup is documented in `README.md`.
 
 ## Phase 2 — Browser execution and evidence (Nov 18–22)
 **Status:** Planned.
