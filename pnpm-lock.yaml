@@ -166,6 +166,12 @@ importers:
 
   .:
     devDependencies:
+      '@choicemirror/browser-runner':
+        specifier: workspace:^
+        version: link:packages/browser-runner
+      '@choicemirror/contracts':
+        specifier: workspace:^
+        version: link:packages/contracts
       '@playwright/test':
         specifier: ^1.65.1
         version: 1.65.1
