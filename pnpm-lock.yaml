@@ -253,6 +253,22 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/browser-runner:
+    dependencies:
+      '@choicemirror/contracts':
+        specifier: workspace:^
+        version: link:../contracts
+      playwright:
+        specifier: 1.65.1
+        version: 1.65.1
+    devDependencies:
+      '@types/node':
+        specifier: ^25.9.9
+        version: 25.9.9
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   packages/contracts:
     dependencies:
       zod:
