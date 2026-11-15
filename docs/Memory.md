@@ -1,6 +1,6 @@
 # ChoiceMirror — Living Project Memory
 
-**Last updated:** 2026-11-15 · **Version:** 0.4
+**Last updated:** 2026-11-15 · **Version:** 0.5
 **Instruction for contributors/AI assistants:** Read this file at the start of each work session. Update it after each completed phase, design/architecture decision, blocker resolution, or notable change. Keep facts, assumptions and planned work clearly distinct; never rewrite history silently.
 
 ## 1. Canonical identity
@@ -9,7 +9,7 @@
 - **Repository:** https://github.com/1tsDaksh/choiceMirror
 - **Event:** SLAY HACKS 2026
 - **Deadline (Devpost displayed):** 2026-12-07 17:00 EST / 22:00 GMT
-- **Current status:** Phase 2 implemented on `feat/phase-2-browser-runner`: deterministic Playwright runner executes both goals of all four scenarios from equivalent starting conditions, structured evidence (ordered events, action counts, screenshots) is stored file-backed and served through Zod-validated APIs, and the UI runs comparisons with live status and evidence panels. AI navigation, metrics, and explanations remain unbuilt (Phases 3–4).
+- **Current status:** Phase 2 implemented on `feat/phase-2-browser-runner`: deterministic Playwright runner executes both goals of all four scenarios from equivalent starting conditions, structured evidence (ordered events, action counts, screenshots) is stored file-backed and served through Zod-validated APIs, and the UI runs comparisons with live status and evidence panels. Browser execution is fail-closed at the request layer (only `BENCHMARK_ORIGIN` may be contacted, including redirect chains) and starts are single-flight by atomic reservation (PR review fixes on `feat/phase-2-browser-runner`, PR #3). AI navigation, metrics, and explanations remain unbuilt (Phases 3–4).
 - **Tracking:** https://github.com/1tsDaksh/choiceMirror/issues/1
 
 ## 2. Core proposition
@@ -54,6 +54,7 @@ Real third-party account actions; purchases; payments; arbitrary public-site cra
 | 2026-11-14 | Moved six spec documents into `docs/` and updated all references | `git mv` to `docs/`; README links, `docs/Architecture.md` tree, and plan file paths updated |
 | 2026-11-15 | Committed the Phase 2 implementation plan and executed Tasks 1–9 (contracts evidence schemas, flows→`buildJourneyPlan`, `packages/storage`, `packages/browser-runner`, real-browser integration spec, POST/status/artifact APIs, evidence UI, E2E suite) | plan `docs/superpowers/plans/2026-11-14-phase-2-browser-runner.md`; commits `611b112`…`d93e6ce`; live smoke: 3 completed comparisons with 8–10 screenshots each; E2E 17/17 |
 | 2026-11-15 | Verified the Phase 2 exit gate | frozen install, typecheck, lint (zero warnings), 68 unit tests (14 files), 17 E2E tests (8 Phase 1 + 5 Phase 2 + 4 integration), both production builds passed |
+| 2026-11-15 | Completed the PR #3 review-fix pass: request-layer origin guard (fail-closed interception, hop-by-hop redirect walk, query-free `blocked` evidence) and atomic single-flight start reservation, with prevention and concurrency tests | frozen install, typecheck, lint (zero warnings), 77 unit tests (14 files), 21 E2E tests (incl. 3 origin-guard prevention tests, each proving zero external hits), both production builds passed; pushed to PR #3 for re-review |
 
 ## 8. Known unknowns / verification
 1. **Eligibility:** public event listing specifies students only and age of majority. Check actual participant status.
@@ -63,7 +64,7 @@ Real third-party account actions; purchases; payments; arbitrary public-site cra
 5. Current repository has a tested Phase 1 foundation plus Phase 2 deterministic browser execution, comparison storage, and screenshot evidence, but no AI navigation, metrics, or explanations; mark later features complete only after tested implementation.
 
 ## 9. Immediate next actions
-- Open the Phase 2 pull request for review (do not self-merge).
+- Await owner re-review of PR #3 (review fixes pushed); merge only after CI passes — never self-merge.
 - Resolve event eligibility and rubric.
 - Select a model provider and usage cap before Phase 3.
 - Record each PR and tested milestone here.
@@ -83,8 +84,11 @@ Real third-party account actions; purchases; payments; arbitrary public-site cra
 | D-010 | 2026-11-14 | File-backed JSON records + PNG screenshots behind `ComparisonStore` | No database setup for the local MVP; one interface keeps storage swappable (e.g. SQLite later) | Confirmed |
 | D-011 | 2026-11-14 | Async `202` + polling status model with a single-flight `429` guard | Browser runs take seconds and must not block the request; one run at a time keeps evidence and browser resources sane | Confirmed |
 | D-012 | 2026-11-14 | Injectable driver seam in `browser-runner` | Unit tests stay browser-free; the real Playwright driver is covered by integration/E2E tests | Confirmed |
+| D-013 | 2026-11-15 | Origin safety enforced at the request layer: fail-closed `context.route` installed before page creation, exact trusted-origin match, service workers blocked, redirect chains walked hop-by-hop with `route.fetch({maxRedirects:0})`, delivered via `route.continue()` (`route.fulfill()` breaks hydration), violations recorded query-free as `blocked` | PR review requirement: prevent off-origin requests (navigation, subresources, clicks, redirects) before any byte leaves the browser, without leaking query strings into evidence | Confirmed |
+| D-014 | 2026-11-15 | Single-flight start guard is an atomic in-process reservation (`tryReserveRun`/`releaseRun`) taken before the first `await` and released on every failure path | Closes the check-then-act race: two concurrent starts must yield exactly one `202` and one `429` | Confirmed |
 
 ## 11. Change log
+- **2026-11-15 v0.5:** PR #3 review-fix pass on `feat/phase-2-browser-runner`: (1) request-layer origin guard — fail-closed context interception installed before page creation (exact trusted origin, service workers blocked, hop-by-hop redirect walk, query-free `blocked` evidence) with three prevention E2E tests proving an external server is never contacted; (2) atomic single-flight reservation in the start route (one `202` + one `429` under concurrency, unit + E2E). Empirical finding: `route.fulfill()` on document responses silently breaks Next.js hydration despite byte-identical HTML — delivery must use `route.continue()` after inspection (D-013, D-014). Verified: frozen install, typecheck, lint (zero warnings), 77 unit tests (14 files), 21 E2E tests (8 Phase 1 + 6 Phase 2 + 4 integration + 3 origin guard), both production builds.
 - **2026-11-15 v0.4:** Implemented Phase 2 on `feat/phase-2-browser-runner`: deterministic Playwright runner (isolated contexts, domain allowlist, fixed limits, honest failure/timeout/blocked states, guaranteed cleanup), evidence schemas in `contracts`, file-backed `ComparisonStore` in `packages/storage`, Zod-validated start/status/artifact APIs with a single-flight 429 guard, and the evidence UI (enabled run action, live polling status, per-goal panels). Goal selection does not count as an action (D-009). Verified: frozen install, typecheck, lint (zero warnings), 68 unit tests (14 files), 17 E2E tests (8 Phase 1 + 5 Phase 2 + 4 integration), both production builds.
 - **2026-11-14 v0.3:** Review-fix pass on `feat/phase-1-foundation` completed (all 3 Important and 10 Minor findings fixed test-first, 4 recommendations adopted, comparison page keeps status 200 with `noindex` per documented Next 16 streaming behavior); relocated `PRD.md`, `Architecture.md`, `Rules.md`, `Design.md`, `Phases.md`, `Memory.md` into `docs/` and updated every reference. Verified: frozen install, typecheck, lint, 24 unit tests, 8 E2E tests, both production builds.
 - **2026-11-14 v0.2:** Implemented and verified the Phase 1 vertical slice: workspace, contracts, web launcher, four benchmark fixtures, API boundaries, E2E coverage, CI workflow, and setup documentation.

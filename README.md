@@ -75,7 +75,7 @@ pnpm build
 2. Open <http://localhost:3000>, select a scenario, and press **Run comparison**.
 3. The app executes both opposing goals sequentially with the deterministic runner and shows live status; each goal panel lists its status, action counts, ordered events, and screenshots.
 
-Evidence is stored under `data/` (gitignored) by default — override the location with `CHOICEMIRROR_DATA_DIR`. The runner may only navigate `BENCHMARK_ORIGIN` (default <http://localhost:3001>). Only one comparison runs at a time; starting another while one is active returns `429`.
+Evidence is stored under `data/` (gitignored) by default — override the location with `CHOICEMIRROR_DATA_DIR`. The runner may only navigate `BENCHMARK_ORIGIN` (default <http://localhost:3001>): every other request — subresources, page-initiated fetches, and each hop of a redirect chain — is aborted at the request layer before it leaves the browser. Only one comparison runs at a time; the start guard is an atomic in-process reservation, so concurrent starts yield exactly one `202` and one `429`.
 
 ## Repository layout
 

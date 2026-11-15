@@ -23,9 +23,9 @@ flowchart TD
 ```
 
 ## Run lifecycle (Phase 2 as shipped)
-1. Client posts `scenarioId` and two opposing `goalIds`; the server validates them against the catalog and creates a `comparisonId`, then answers `202` (or `400` invalid / `429` while another run is active).
+1. Client posts `scenarioId` and two opposing `goalIds`; the server validates them against the catalog, **atomically reserves the single in-process run slot before its first `await`**, and answers `202 {comparisonId, status:"running"}` (`400` for invalid requests; `429` when the slot is already taken — the reservation is released on every failure path).
 2. The run controller executes Goal A then Goal B sequentially, each in a fresh isolated Playwright context with a fixed viewport, the shared seed, and cleared storage — equivalent starting conditions by construction.
-3. Each journey opens the fixture at the allowlisted `BENCHMARK_ORIGIN`, records the non-counting goal selection, executes the documented flow-step clicks, and captures ordered events plus screenshot checkpoints.
+3. Each journey opens the fixture at the trusted `BENCHMARK_ORIGIN` behind the fail-closed request interceptor (see Security), records the non-counting goal selection, executes the documented flow-step clicks, and captures ordered events plus screenshot checkpoints.
 4. Fixed limits (max actions, step timeout, journey timeout) stop runaway runs with `timeout`, `blocked`, or `failed` states; browser resources are always released, including on failure.
 5. Journeys and screenshots are persisted incrementally, so partial evidence survives a mid-run failure; the comparison finishes `completed` or `failed`.
 6. The UI polls `GET /api/comparisons/:id` while `running` and renders per-goal panels: status badge, action counts, ordered events, and screenshots.
@@ -100,13 +100,14 @@ Never persist model reasoning as fact; store brief model-provided action justifi
 
 ## API (as shipped in Phase 2)
 - `GET /api/scenarios`: list controlled fixtures.
-- `POST /api/comparisons`: validate `{scenarioId, goalIds}` against the catalog and start a bounded paired run → `202 {comparisonId, status:"running"}`; `400` for invalid requests; `429` while another comparison is running (single-flight guard).
+- `POST /api/comparisons`: validate `{scenarioId, goalIds}` against the catalog and start a bounded paired run → `202 {comparisonId, status:"running"}`; `400` for invalid requests; `429` while another comparison is running (atomic single-flight reservation taken before the first `await` and released on every failure path).
 - `GET /api/comparisons/:id`: `{comparison, journeys}` validated against `comparisonDetailSchema`; `404` for unknown, corrupt, or traversal ids.
 - `GET /api/comparisons/:id/artifacts/:artifactId`: stored `image/png` screenshot bytes with `Cache-Control: private, max-age=300`; `404` otherwise. There is deliberately **no** endpoint that navigates to an arbitrary URL.
 - Model-provider endpoints and metrics endpoints are planned for Phases 3–4. The MVP stays a single server process; do not create unnecessary distributed infrastructure.
 
 ## Security / isolation
-- Allowlist full origin(s), validate redirects before following, block arbitrary user-provided URLs in MVP.
+- **Request-layer origin guard (shipped):** a fail-closed `context.route` handler is installed before any page exists; every request must match the exact trusted origin or it is aborted in the browser before a byte leaves. Service workers are blocked so the interceptor is the only path to the network. Because Playwright routes only the first request of a redirect chain (microsoft/playwright#34994) and native redirect hops do not re-enter the handler, chains are walked hop-by-hop with `route.fetch({maxRedirects:0})` and aborted at the first off-origin target. Responses are delivered with `route.continue()`, never `route.fulfill()` — fulfilling a document leaves byte-identical HTML yet silently breaks Next.js hydration (React never attaches), while fetch-then-continue hydrates. Blocked URLs are recorded without query strings, and any violation marks the journey `blocked`. Covered by `tests/e2e/origin-guard.spec.ts` (subresource, single-hop redirect, multi-hop chain — each asserting zero hits on the external server).
+- Allowlist full origin(s), block arbitrary user-provided URLs in MVP.
 - Dedicated test browser without real credentials, storage or extensions.
 - No shell tool exposed to AI; typed click, input, scroll and stop only; sensitive or externally impactful actions blocked.
 - Sanitize model/page text as untrusted content; DOM instructions cannot override system policy.
