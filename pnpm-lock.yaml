@@ -224,9 +224,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@choicemirror/browser-runner':
+        specifier: workspace:^
+        version: link:../../packages/browser-runner
       '@choicemirror/contracts':
         specifier: workspace:^
         version: link:../../packages/contracts
+      '@choicemirror/storage':
+        specifier: workspace:^
+        version: link:../../packages/storage
       next:
         specifier: ^16.4.6
         version: 16.4.6(@babel/core@7.29.13(supports-color@7.2.0))(@playwright/test@1.65.1)(@types/node@25.9.9)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
