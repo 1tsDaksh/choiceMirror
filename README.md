@@ -4,15 +4,18 @@
 
 ChoiceMirror is an AI-powered behavioural UX auditor for **SLAY HACKS 2026**. It compares opposing user journeys on the same interface—such as **join vs leave** or **accept vs reject**—and is designed to show measurable friction with inspectable browser evidence.
 
-> **Current status:** Phase 1 foundation is implemented. The repository runs two local applications and four controlled benchmark fixtures. AI navigation, automated Playwright journeys, stored comparisons, metrics, and evidence capture are **not implemented yet**.
+> **Current status:** Phase 2 is implemented. The repository runs two local applications, four controlled benchmark fixtures, and a deterministic Playwright runner that executes both opposing goals of any scenario from equivalent starting conditions. Structured evidence — ordered events, action counts, and screenshots — is stored locally and viewable in the app. AI navigation, metrics, and explanations are **not implemented yet** (Phases 3–4).
 
 ## What works now
 
-- Accessible scenario launcher on the web app.
+- Accessible scenario launcher on the web app with a working **Run comparison** action.
 - Four synthetic benchmark fixtures with balanced and asymmetric opposing flows.
+- Deterministic Playwright runs: isolated browser contexts, fixed viewport and seed, domain allowlist, action/step/journey limits, and honest timeout/blocked/failed states with guaranteed cleanup.
+- Stored comparison evidence: ordered trace events, accurate action counts, and PNG screenshots served through Zod-validated APIs.
+- Live comparison status with per-goal evidence panels (status badge, action counts, ordered events, screenshots).
 - Manual completion and deterministic reset for every goal.
 - Honest loading, empty, error, and unavailable states.
-- Automated tests covering all eight goal paths, keyboard activation, reset, 404s, and external-request blocking.
+- Automated tests covering contracts and APIs, all eight goal paths, keyboard activation, reset, 404s, external-request blocking, and full paired browser runs.
 
 ## Local setup
 
@@ -27,6 +30,7 @@ From a fresh clone on Windows (PowerShell):
 ```powershell
 npm install --global pnpm@12.18.0
 pnpm install --frozen-lockfile
+pnpm exec playwright install chromium
 copy .env.example .env.local
 pnpm dev
 ```
@@ -36,11 +40,12 @@ From a fresh clone on macOS or Linux:
 ```bash
 npm install --global pnpm@12.18.0
 pnpm install --frozen-lockfile
+pnpm exec playwright install chromium
 cp .env.example .env.local
 pnpm dev
 ```
 
-The environment file is optional because safe local defaults are built in.
+The environment file is optional because safe local defaults are built in. Comparison runs need Playwright's Chromium browser, installed once with `pnpm exec playwright install chromium`.
 
 Open:
 
@@ -64,34 +69,43 @@ pnpm build
 
 `pnpm build` creates production builds for both applications.
 
+### Running a comparison
+
+1. Start both apps with `pnpm dev`.
+2. Open <http://localhost:3000>, select a scenario, and press **Run comparison**.
+3. The app executes both opposing goals sequentially with the deterministic runner and shows live status; each goal panel lists its status, action counts, ordered events, and screenshots.
+
+Evidence is stored under `data/` (gitignored) by default — override the location with `CHOICEMIRROR_DATA_DIR`. The runner may only navigate `BENCHMARK_ORIGIN` (default <http://localhost:3001>): every other request — subresources, page-initiated fetches, and each hop of a redirect chain — is aborted at the request layer before it leaves the browser. Only one comparison runs at a time; the start guard is an atomic in-process reservation, so concurrent starts yield exactly one `202` and one `429`.
+
 ## Repository layout
 
 ```text
 apps/
-  web/          Comparison launcher and API boundary
-  benchmark/    Local synthetic controlled fixtures
+  web/             Comparison launcher, evidence UI, and API boundary
+  benchmark/       Local synthetic controlled fixtures
 packages/
-  contracts/    Zod schemas and deterministic scenario catalog
+  contracts/       Zod schemas and deterministic scenario catalog
+  browser-runner/  Deterministic Playwright journey executor
+  storage/         File-backed comparison evidence store
 tests/
-  e2e/          Two-server Playwright acceptance tests
+  e2e/             Two-server Playwright acceptance tests
 docs/
-  superpowers/  Implementation plans
+  superpowers/     Implementation plans
 ```
 
 ## Current limitations
 
-- No AI model or model credentials are used.
-- No browser automation or stored comparison runs exist yet.
-- The **Run comparison** control is intentionally disabled.
-- No third-party websites are visited.
+- No AI model or model credentials are used; journeys follow fixed scripted flows (Phase 3 adds AI navigation).
+- No metrics, scores, or explanations are computed yet (Phase 4).
+- No third-party websites are visited; runs open only the local benchmark origin.
 - No accounts, payments, real consent changes, personal data, or consequential submissions occur.
 - The benchmark uses synthetic local state only.
-- The `seed` query parameter is displayed for reproducibility but does not perturb fixture state yet; flows are deterministic by construction.
-- Phase 1 does not make legal, manipulation, or dark-pattern claims.
+- The `seed` is recorded in evidence and passed to the fixture URL; flows are deterministic by construction, so the seed does not perturb fixture state yet.
+- Phase 2 does not make legal, manipulation, or dark-pattern claims.
 
 ## Planned delivery
 
-The detailed milestone plan is in [Phases.md](./docs/Phases.md). Later phases add isolated Playwright execution, a structured AI navigation policy, deterministic metrics, evidence-linked comparison views, and submission materials.
+The detailed milestone plan is in [Phases.md](./docs/Phases.md). Phase 2 added deterministic Playwright execution and stored, inspectable evidence. Later phases add a structured AI navigation policy, deterministic metrics, evidence-linked comparison views, and submission materials.
 
 ## Design and requirements
 

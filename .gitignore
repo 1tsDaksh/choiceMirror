@@ -13,3 +13,6 @@ test-results/
 .env
 .env.local
 .env.*.local
+
+# Local comparison evidence written by the file-backed store.
+apps/web/data/

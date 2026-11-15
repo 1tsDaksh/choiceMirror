@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { scenarios } from "@choicemirror/contracts";
+import { scenarios } from "./catalog";
 
 import { getFlow, initialFlowState } from "./flows";
 

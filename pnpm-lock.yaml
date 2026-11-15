@@ -166,6 +166,12 @@ importers:
 
   .:
     devDependencies:
+      '@choicemirror/browser-runner':
+        specifier: workspace:^
+        version: link:packages/browser-runner
+      '@choicemirror/contracts':
+        specifier: workspace:^
+        version: link:packages/contracts
       '@playwright/test':
         specifier: ^1.65.1
         version: 1.65.1
@@ -218,9 +224,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@choicemirror/browser-runner':
+        specifier: workspace:^
+        version: link:../../packages/browser-runner
       '@choicemirror/contracts':
         specifier: workspace:^
         version: link:../../packages/contracts
+      '@choicemirror/storage':
+        specifier: workspace:^
+        version: link:../../packages/storage
       next:
         specifier: ^16.4.6
         version: 16.4.6(@babel/core@7.29.13(supports-color@7.2.0))(@playwright/test@1.65.1)(@types/node@25.9.9)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -253,12 +265,44 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/browser-runner:
+    dependencies:
+      '@choicemirror/contracts':
+        specifier: workspace:^
+        version: link:../contracts
+      playwright:
+        specifier: 1.65.1
+        version: 1.65.1
+    devDependencies:
+      '@types/node':
+        specifier: ^25.9.9
+        version: 25.9.9
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   packages/contracts:
     dependencies:
       zod:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@types/node':
+        specifier: ^25.9.9
+        version: 25.9.9
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
+  packages/storage:
+    dependencies:
+      '@choicemirror/contracts':
+        specifier: workspace:^
+        version: link:../contracts
+    devDependencies:
+      '@types/node':
+        specifier: ^25.9.9
+        version: 25.9.9
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

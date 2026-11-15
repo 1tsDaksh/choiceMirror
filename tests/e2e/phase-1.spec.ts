@@ -146,7 +146,7 @@ async function completeFlow(
   );
 }
 
-test("launcher selects a controlled scenario and keeps automated runs disabled", async ({
+test("launcher selects a controlled scenario and offers a working run action", async ({
   page,
 }) => {
   const externalRequests = trackExternalRequests(page);
@@ -165,9 +165,11 @@ test("launcher selects a controlled scenario and keeps automated runs disabled",
   await expect(page.getByText("Goal B", { exact: true })).toBeVisible();
 
   const runButton = page.getByRole("button", { name: "Run comparison" });
-  await expect(runButton).toBeDisabled();
+  await expect(runButton).toBeEnabled();
   await expect(
-    page.getByText("The browser runner arrives in Phase 2"),
+    page.getByText(
+      "Runs execute locally against the benchmark app with fixed limits.",
+    ),
   ).toBeVisible();
 
   await expect(
@@ -345,7 +347,9 @@ test("missing comparison IDs show an honest unavailable state", async ({
     page.getByRole("heading", { name: "No stored comparison" }),
   ).toBeVisible();
   await expect(
-    page.getByText("Automated execution and evidence capture arrive with Phase 2."),
+    page.getByText(
+      "This ID has no stored run. Start a comparison from the scenario launcher to capture evidence.",
+    ),
   ).toBeVisible();
   await expect(
     page.locator('meta[name="robots"][content="noindex"]').first(),

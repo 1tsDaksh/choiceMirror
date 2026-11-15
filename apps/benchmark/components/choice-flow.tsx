@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { Goal, Scenario } from "@choicemirror/contracts";
-
-import { getFlow, initialFlowState } from "@/lib/flows";
+import { getFlow, initialFlowState } from "@choicemirror/contracts";
 
 type ChoiceFlowProps = {
   scenario: Scenario;

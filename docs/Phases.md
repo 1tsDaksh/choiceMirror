@@ -21,12 +21,13 @@ Each phase produces a demonstrable vertical slice, tests, screenshots or other v
 **Exit gate evidence (2026-11-14):** frozen-lockfile install succeeds; strict typecheck passes workspace-wide; lint passes workspace-wide; 24 unit tests pass across 5 files; 8 Playwright tests pass against ports 3000 and 3001 (keyboard, focus, malformed-ID 404, honest states, fixture index); production builds succeed for both apps. Fresh-clone setup is documented in `README.md`.
 
 ## Phase 2 — Browser execution and evidence (Nov 18–22)
-**Status:** Planned.
+**Status:** Complete (2026-11-15).
 - Implement Playwright worker with isolated contexts and fixed settings.
 - Build event schema: proposed action vs executed action, screenshot checkpoints and result state.
 - Implement bounded safe navigation actions, domain allowlist and stop conditions.
 - Execute both paths independently from matching state.
 **Exit gate:** Tests prove paired flow and reproducible, inspectable traces; no API dependency required yet.
+**Exit gate evidence (2026-11-15):** `npx pnpm install --frozen-lockfile` succeeds; strict typecheck passes workspace-wide; lint passes workspace-wide with zero warnings; 77 unit tests pass across 14 files; 21 Playwright tests pass (8 Phase 1 + 6 Phase 2 + 4 runner integration + 3 origin guard) covering all four scenarios completing both goals with documented action counts, equivalent starting conditions, trace ordering, screenshot creation/retrieval (PNG magic bytes verified), invalid and missing inputs, request-layer origin prevention (off-origin subresource, single-hop redirect, and a same-origin-first-hop redirect chain each proven never to reach an external server), single-flight concurrency (one `202` + one `429`), and the full UI run flow; production builds succeed for both apps (`/comparisons/[id]` and all API routes render dynamically). Fresh-clone setup including `pnpm exec playwright install chromium` is documented in `README.md`.
 
 ## Phase 3 — Real AI navigation (Nov 23–27)
 **Status:** Planned.
@@ -60,13 +61,13 @@ Each phase produces a demonstrable vertical slice, tests, screenshots or other v
 
 ## Quality checkpoints
 - **Nov 17:** Met early on 2026-11-14: both apps run, all four fixtures are navigable, and automated smoke tests pass.
-- **Nov 22:** Two fully traced deterministic browser runs.
+- **Nov 22:** Two fully traced deterministic browser runs — met early (2026-11-15): all four scenarios execute both goals with stored traces and screenshots.
 - **Nov 27:** At least one successful safe AI-driven paired run.
 - **Dec 2:** Evidence-grounded result screen and repeatability report.
 - **Dec 6:** All presentation assets ready; submission tested.
 
 ## Current blocker register
-- Phase 1: no open implementation blockers after the verified exit-gate commands.
+- Phase 1–2: no open implementation blockers after the verified exit-gate commands.
 - Verify participant eligibility: event listing indicates students only, age of majority.
 - Verify competing rubric versions on event page vs rules.
 - Model credentials, API budget and browser-worker host not yet selected for Phase 3.
