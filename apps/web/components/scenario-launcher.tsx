@@ -1,11 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type { Scenario } from "@choicemirror/contracts";
 
 import { ComparisonState } from "@/components/comparison-state";
-import { RunStatus } from "@/components/run-status";
 import { loadScenarios } from "@/lib/load-scenarios";
 
 type LauncherState =
@@ -13,6 +13,11 @@ type LauncherState =
   | { status: "error" }
   | { status: "empty" }
   | { status: "ready"; scenarios: Scenario[] };
+
+type RunState =
+  | { status: "idle" }
+  | { status: "starting" }
+  | { status: "error"; message: string };
 
 type ScenarioLauncherProps = {
   initialScenarios: Scenario[];
@@ -37,6 +42,7 @@ function benchmarkUrl(path: string): string {
 export function ScenarioLauncher({
   initialScenarios,
 }: ScenarioLauncherProps) {
+  const router = useRouter();
   const [state, setState] = useState<LauncherState>(() =>
     initialScenarios.length > 0
       ? { status: "ready", scenarios: initialScenarios }
@@ -45,6 +51,7 @@ export function ScenarioLauncher({
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(
     null,
   );
+  const [runState, setRunState] = useState<RunState>({ status: "idle" });
 
   const retryScenarios = () => {
     setState({ status: "loading" });
@@ -97,6 +104,68 @@ export function ScenarioLauncher({
     (scenario) => scenario.id === selectedScenarioId,
   );
 
+  const startRun = async () => {
+    if (selectedScenario === undefined || runState.status === "starting") {
+      return;
+    }
+
+    setRunState({ status: "starting" });
+
+    try {
+      const response = await fetch("/api/comparisons", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          scenarioId: selectedScenario.id,
+          // Catalog order is the contract: Goal A first, Goal B second.
+          goalIds: selectedScenario.goals.map((goal) => goal.id),
+        }),
+      });
+
+      if (response.status === 202) {
+        const body = (await response.json()) as { comparisonId?: unknown };
+        if (
+          typeof body.comparisonId === "string" &&
+          /^cmp_[a-f0-9]{16}$/.test(body.comparisonId)
+        ) {
+          router.push(`/comparisons/${body.comparisonId}`);
+          return;
+        }
+        setRunState({
+          status: "error",
+          message: "The comparison could not be started.",
+        });
+        return;
+      }
+
+      if (response.status === 400) {
+        setRunState({
+          status: "error",
+          message: "That request was not valid.",
+        });
+        return;
+      }
+
+      if (response.status === 429) {
+        setRunState({
+          status: "error",
+          message: "Another comparison is still running. Wait for it to finish.",
+        });
+        return;
+      }
+
+      setRunState({
+        status: "error",
+        message: "The comparison could not be started.",
+      });
+    } catch {
+      setRunState({
+        status: "error",
+        message: "The comparison could not be started.",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <fieldset className="rounded-2xl border border-white/10 bg-surface p-4 sm:p-5">
@@ -118,7 +187,12 @@ export function ScenarioLauncher({
                 name="scenario"
                 value={scenario.id}
                 checked={selectedScenarioId === scenario.id}
-                onChange={() => setSelectedScenarioId(scenario.id)}
+                onChange={() => {
+                  setSelectedScenarioId(scenario.id);
+                  // A stale error from another scenario must not follow the
+                  // selection.
+                  setRunState({ status: "idle" });
+                }}
                 className="sr-only"
               />
               <span className="flex items-center justify-between gap-2">
@@ -190,14 +264,16 @@ export function ScenarioLauncher({
           </div>
 
           <div className="mt-5 flex flex-col gap-4">
-            <RunStatus />
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                disabled
-                className="min-h-12 cursor-not-allowed rounded-xl bg-elevated px-5 font-semibold text-secondary-text"
+                onClick={() => void startRun()}
+                disabled={runState.status === "starting"}
+                className="min-h-12 rounded-xl bg-highlight px-5 font-semibold text-canvas hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
               >
-                Run comparison
+                {runState.status === "starting"
+                  ? "Starting run…"
+                  : "Run comparison"}
               </button>
               <a
                 href={benchmarkUrl(selectedScenario.benchmarkPath)}
@@ -206,6 +282,17 @@ export function ScenarioLauncher({
                 Explore manually in benchmark →
               </a>
             </div>
+            {runState.status === "error" ? (
+              <p
+                role="status"
+                className="rounded-xl border border-error/40 bg-error/5 p-3 text-sm text-error"
+              >
+                {runState.message}
+              </p>
+            ) : null}
+            <p className="text-sm text-secondary-text">
+              Runs execute locally against the benchmark app with fixed limits.
+            </p>
           </div>
         </section>
       ) : (

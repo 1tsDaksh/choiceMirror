@@ -28,8 +28,8 @@ export default function RootLayout({
             >
               Choice<span className="text-journey-a">Mirror</span>
             </Link>
-            <span className="rounded-full border border-warning/40 bg-warning/10 px-3 py-1 text-xs font-medium text-warning">
-              Phase 1 shell
+            <span className="rounded-full border border-highlight/40 bg-highlight/10 px-3 py-1 text-xs font-medium text-highlight">
+              Phase 2 local runner
             </span>
           </div>
         </header>
@@ -37,7 +37,8 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="mx-auto max-w-7xl border-t border-white/10 px-4 py-6 text-sm text-secondary-text sm:px-6">
-          Evidence-first comparisons. Automated runs are not available yet.
+          Evidence-first comparisons. Runs execute locally against the
+          benchmark app.
         </footer>
       </body>
     </html>

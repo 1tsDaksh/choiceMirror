@@ -7,7 +7,7 @@ export default function ComparisonNotFound() {
     <ComparisonState
       kind="empty"
       title="No stored comparison"
-      description="Phase 1 has not recorded a comparison run. Automated execution and evidence capture arrive with Phase 2."
+      description="This ID has no stored run. Start a comparison from the scenario launcher to capture evidence."
       action={
         <Link
           href="/"

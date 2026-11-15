@@ -15,8 +15,8 @@ export default function HomePage() {
         <p className="max-w-3xl text-base text-secondary-text sm:text-lg">
           ChoiceMirror is designed to run opposing user journeys under matched
           conditions and link every reported difference to inspectable
-          evidence. Phase 1 ships the foundation: four controlled local
-          fixtures you can explore by hand.
+          evidence. Phase 1 shipped the foundation; Phase 2 runs both sides of
+          each choice and records the evidence.
         </p>
       </section>
 
@@ -27,8 +27,8 @@ export default function HomePage() {
           From action to evidence
         </h2>
         <p className="max-w-3xl text-sm text-secondary-text">
-          The automated comparison pipeline arrives in later phases; Phase 1
-          provides the matched fixtures it will run on.
+          Comparisons now execute locally with the deterministic browser
+          runner; metrics and explanations arrive in later phases.
         </p>
         <ol className="grid gap-4 md:grid-cols-3">
           {[
