@@ -15,7 +15,15 @@ import { getStore } from "./comparison-store";
 let activeRunId: string | null = null;
 
 export function benchmarkOrigin(): string {
-  return process.env.BENCHMARK_ORIGIN ?? "http://localhost:3001";
+  const configured = process.env.BENCHMARK_ORIGIN;
+  const raw =
+    configured !== undefined && configured.trim().length > 0
+      ? configured
+      : "http://localhost:3001";
+  // Normalize to a bare origin: a trailing slash or path in the env value
+  // would otherwise never match `url.origin` in the allowlist check and
+  // would produce a double slash in the navigate URL.
+  return new URL(raw).origin;
 }
 
 export function hasActiveRun(): boolean {
@@ -24,6 +32,27 @@ export function hasActiveRun(): boolean {
 
 export function activeComparisonId(): string | null {
   return activeRunId;
+}
+
+/**
+ * Atomically claims the single-flight slot for `comparisonId`. The
+ * check-and-set is synchronous, so callers must invoke it directly (with no
+ * intervening `await`) — that is what makes two interleaved start requests
+ * unable to both succeed.
+ */
+export function tryReserveRun(comparisonId: string): boolean {
+  if (activeRunId !== null) {
+    return false;
+  }
+  activeRunId = comparisonId;
+  return true;
+}
+
+/** Releases the slot only if it is still held by `comparisonId`. */
+export function releaseRun(comparisonId: string): void {
+  if (activeRunId === comparisonId) {
+    activeRunId = null;
+  }
 }
 
 function now(): string {
@@ -36,7 +65,7 @@ function now(): string {
  * partial evidence. Fire-and-forget from the API route: never rejects.
  */
 export async function startComparisonRun(comparisonId: string): Promise<void> {
-  if (activeRunId !== null) {
+  if (activeRunId !== null && activeRunId !== comparisonId) {
     // Another comparison owns the runner; leave an honest failed record.
     const store = getStore();
     const existing = await store.getComparison(comparisonId);
@@ -51,6 +80,9 @@ export async function startComparisonRun(comparisonId: string): Promise<void> {
     return;
   }
 
+  // The API route reserves the slot synchronously before its first await;
+  // acquiring here too keeps direct callers (tests, future entry points)
+  // correct. Re-assigning the already-reserved id is a no-op.
   activeRunId = comparisonId;
 
   try {
@@ -138,6 +170,6 @@ export async function startComparisonRun(comparisonId: string): Promise<void> {
       // Best effort: the runner must never throw at its caller.
     }
   } finally {
-    activeRunId = null;
+    releaseRun(comparisonId);
   }
 }

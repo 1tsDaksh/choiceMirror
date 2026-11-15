@@ -7,8 +7,9 @@ import {
 
 import { getStore } from "../../../lib/comparison-store";
 import {
-  hasActiveRun,
+  releaseRun,
   startComparisonRun,
+  tryReserveRun,
 } from "../../../lib/run-comparison";
 
 function invalidRequest(): Response {
@@ -62,10 +63,6 @@ export async function POST(request: Request): Promise<Response> {
     return invalidRequest();
   }
 
-  if (hasActiveRun()) {
-    return alreadyRunning();
-  }
-
   const record: ComparisonRecord = {
     id: newComparisonId(),
     scenarioId: parsed.data.scenarioId,
@@ -75,13 +72,25 @@ export async function POST(request: Request): Promise<Response> {
     createdAt: new Date().toISOString(),
   };
 
+  // Atomic single-flight reservation: a synchronous check-and-set before the
+  // first await after validation. Two interleaved POSTs cannot both pass —
+  // the losing request answers 429 without touching the store.
+  if (!tryReserveRun(record.id)) {
+    return alreadyRunning();
+  }
+
   try {
     await getStore().saveComparison(record);
   } catch {
+    releaseRun(record.id);
     return notStarted();
   }
 
   void startComparisonRun(record.id).catch(async (error: unknown) => {
+    // The run releases its own reservation in its finally; releasing here
+    // too is harmless (it only clears a matching id) and guarantees the slot
+    // can never leak if the run throws before acquiring it.
+    releaseRun(record.id);
     // The controller records its own failures; this guards unexpected throws
     // so a 202 never leaves a comparison stuck in "running".
     try {

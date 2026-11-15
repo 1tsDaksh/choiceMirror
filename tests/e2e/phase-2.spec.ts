@@ -228,3 +228,31 @@ test("an extra origin key cannot steer navigation off the benchmark", async ({
     expect(journey.origin).toBe(BENCHMARK_ORIGIN);
   }
 });
+
+test("concurrent start requests are single-flight: one 202, one 429", async ({
+  request,
+}) => {
+  const payload = {
+    scenarioId: "membership-balanced",
+    goalIds: ["join", "leave"],
+  };
+
+  const [first, second] = await Promise.all([
+    request.post("/api/comparisons", { data: payload }),
+    request.post("/api/comparisons", { data: payload }),
+  ]);
+
+  const statuses = [first.status(), second.status()].sort((a, b) => a - b);
+  expect(statuses).toEqual([202, 429]);
+
+  const rejected = first.status() === 429 ? first : second;
+  expect(await rejected.json()).toEqual({
+    error: "A comparison is already running.",
+  });
+
+  const accepted = first.status() === 202 ? first : second;
+  const { comparisonId } = (await accepted.json()) as { comparisonId: string };
+  const detail = await waitForTerminalComparison(request, comparisonId);
+  expect(detail.comparison.status).toBe("completed");
+  expect(detail.journeys).toHaveLength(2);
+});

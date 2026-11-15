@@ -36,6 +36,7 @@ vi.mock("./comparison-store", () => ({
 
 import {
   activeComparisonId,
+  benchmarkOrigin,
   hasActiveRun,
   startComparisonRun,
 } from "./run-comparison";
@@ -211,5 +212,27 @@ describe("startComparisonRun", () => {
 
     expect(hasActiveRun()).toBe(false);
     expect(activeComparisonId()).toBeNull();
+  });
+});
+
+describe("benchmarkOrigin", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("normalizes the configured value to a bare origin", () => {
+    vi.stubEnv("BENCHMARK_ORIGIN", "http://localhost:3001");
+    expect(benchmarkOrigin()).toBe("http://localhost:3001");
+
+    vi.stubEnv("BENCHMARK_ORIGIN", "http://localhost:3001/");
+    expect(benchmarkOrigin()).toBe("http://localhost:3001");
+
+    vi.stubEnv("BENCHMARK_ORIGIN", "http://localhost:3001/nested/path");
+    expect(benchmarkOrigin()).toBe("http://localhost:3001");
+  });
+
+  it("falls back to the safe default when unset", () => {
+    vi.stubEnv("BENCHMARK_ORIGIN", "");
+    expect(benchmarkOrigin()).toBe("http://localhost:3001");
   });
 });
