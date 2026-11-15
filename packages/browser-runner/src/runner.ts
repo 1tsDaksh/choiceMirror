@@ -7,6 +7,7 @@ import {
 
 import { isAllowlistedUrl } from "./allowlist";
 import { createPlaywrightOpenJourney } from "./driver";
+import { BlockedError } from "./errors";
 import { limits } from "./limits";
 
 export type JourneyExecutionResult = {
@@ -50,8 +51,6 @@ class ExecutionTimeoutError extends Error {
     this.name = "TimeoutError";
   }
 }
-
-class BlockedError extends Error {}
 
 function withTimeout<T>(
   promise: Promise<T>,
