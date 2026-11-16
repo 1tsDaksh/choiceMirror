@@ -65,3 +65,39 @@ export const comparisonMetricsSchema = z.object({
 export type ComparisonResult = z.infer<typeof comparisonResultSchema>;
 export type ComparableConditions = z.infer<typeof comparableConditionsSchema>;
 export type ComparisonMetrics = z.infer<typeof comparisonMetricsSchema>;
+
+export const findingCategorySchema = z.enum([
+  "action-asymmetry",
+  "balanced-actions",
+  "inconclusive",
+]);
+
+export const findingQualitySchema = z.enum([
+  "evidence-complete",
+  "evidence-partial",
+  "insufficient-evidence",
+]);
+
+export const findingEvidenceSchema = z.object({
+  journeyId: z.string(),
+  stepNos: z.array(z.number().int().nonnegative()),
+  screenshotIds: z.array(z.string()),
+});
+
+export const findingSchema = z.object({
+  id: z.string(),
+  category: findingCategorySchema,
+  title: z.string().min(1),
+  explanation: z.string().min(1),
+  observed: z.array(z.string()),
+  calculated: z.array(z.string()),
+  interpreted: z.string().min(1),
+  evidence: z.array(findingEvidenceSchema),
+  limitations: z.array(z.string()),
+  quality: findingQualitySchema,
+});
+
+export type FindingCategory = z.infer<typeof findingCategorySchema>;
+export type FindingQuality = z.infer<typeof findingQualitySchema>;
+export type FindingEvidence = z.infer<typeof findingEvidenceSchema>;
+export type Finding = z.infer<typeof findingSchema>;
