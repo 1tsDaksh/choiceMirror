@@ -2,6 +2,11 @@ export { isAllowlistedUrl } from "./allowlist";
 export { createPlaywrightOpenJourney } from "./driver";
 export { limits } from "./limits";
 export {
+  runAiJourney,
+  type AiJourneyExecutionResult,
+  type RunAiJourneyOptions,
+} from "./ai-runner";
+export {
   runJourney,
   type AiJourneyDriver,
   type JourneyDriver,

@@ -62,14 +62,14 @@ export type RunJourneyOptions = {
   journeyTimeoutMs?: number;
 };
 
-class ExecutionTimeoutError extends Error {
+export class ExecutionTimeoutError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "TimeoutError";
   }
 }
 
-function withTimeout<T>(
+export function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
   label: string,
@@ -91,7 +91,7 @@ function withTimeout<T>(
   });
 }
 
-function classifyError(
+export function classifyError(
   error: unknown,
 ): "failed" | "timeout" | "blocked" {
   if (error instanceof BlockedError) {
@@ -103,7 +103,7 @@ function classifyError(
   return "failed";
 }
 
-function errorMessage(error: unknown): string {
+export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
