@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium, type ElementHandle } from "playwright";
 
 import { OBSERVATION_LIMITS } from "@choicemirror/contracts";
 
@@ -166,6 +166,14 @@ export function createPlaywrightOpenJourney(options: {
        * targetId always resolves to the element the model was shown.
        */
       let storedElements: RawElement[] = [];
+      /**
+       * The exact DOM nodes behind `storedElements`, bound during observe().
+       * Execution clicks these handles directly — never a
+       * `getByRole(...).nth(occurrence)` re-resolution, whose element
+       * population (visible-only) and accessible-name semantics differ from
+       * the in-page collection and can shift an id onto a different control.
+       */
+      let storedHandles: ElementHandle<Element>[] = [];
 
       const driver: AiJourneyDriver = {
         async navigate(url) {
@@ -218,11 +226,15 @@ export function createPlaywrightOpenJourney(options: {
           return page.url();
         },
         async observe() {
-          // Collected in-page: accessible-name-first, bounded, no HTML.
-          // Empty-name elements are dropped here — before id assignment —
-          // so the stored order matches buildObservation exactly.
-          const raw = await withOriginGuard(() =>
-            page.evaluate(
+          // Collected in-page in one snapshot: accessible-name-first,
+          // visibility-filtered, bounded, no HTML. Hidden controls are
+          // dropped before id assignment, and the same snapshot yields the
+          // exact nodes clickElement() will act on — so an id can never
+          // resolve to a different element than the one the model was
+          // shown. Empty-name elements are dropped here too, so the stored
+          // order matches buildObservation exactly.
+          const snapshot = await withOriginGuard(() =>
+            page.evaluateHandle(
               ({ maxElements, maxHeadings }) => {
                 const clean = (value: string | null | undefined): string =>
                   (value ?? "").trim();
@@ -239,7 +251,19 @@ export function createPlaywrightOpenJourney(options: {
                   if (value) return value;
                   return clean(element.getAttribute("title"));
                 };
+                // Playwright's visibility rule: a non-empty bounding box
+                // and not visibility:hidden (a display:none ancestor
+                // collapses the box to zero). Only genuinely visible
+                // controls are eligible.
+                const visible = (element: Element): boolean => {
+                  if (getComputedStyle(element).visibility === "hidden") {
+                    return false;
+                  }
+                  const rect = element.getBoundingClientRect();
+                  return rect.width > 0 && rect.height > 0;
+                };
 
+                const eligible: Element[] = [];
                 const elements: Array<{
                   role: "button" | "link";
                   name: string;
@@ -252,6 +276,7 @@ export function createPlaywrightOpenJourney(options: {
                 );
                 for (const element of candidates) {
                   if (elements.length >= maxElements) break;
+                  if (!visible(element)) continue;
                   const role: "button" | "link" =
                     element.tagName === "BUTTON" ||
                     element.getAttribute("role") === "button"
@@ -265,6 +290,7 @@ export function createPlaywrightOpenJourney(options: {
                   const enabled =
                     !((element as HTMLButtonElement).disabled ?? false) &&
                     element.getAttribute("aria-disabled") !== "true";
+                  eligible.push(element);
                   elements.push({ role, name, enabled, occurrence });
                 }
 
@@ -278,11 +304,14 @@ export function createPlaywrightOpenJourney(options: {
                 }
 
                 return {
-                  url: location.href,
-                  title: document.title,
-                  headings,
-                  text: document.body?.innerText ?? "",
-                  elements,
+                  data: {
+                    url: location.href,
+                    title: document.title,
+                    headings,
+                    text: document.body?.innerText ?? "",
+                    elements,
+                  },
+                  eligible,
                 };
               },
               {
@@ -291,23 +320,59 @@ export function createPlaywrightOpenJourney(options: {
               },
             ),
           );
-          storedElements = raw.elements;
-          return raw;
+
+          try {
+            const raw = await snapshot.evaluate((result) => result.data);
+            const eligible = await snapshot.evaluateHandle(
+              (result) => result.eligible,
+            );
+            try {
+              // One handle per collected element, index-aligned with the
+              // data the model sees: execution is bound to these nodes.
+              const properties = await eligible.getProperties();
+              const handles: ElementHandle<Element>[] = [];
+              for (let index = 0; index < raw.elements.length; index += 1) {
+                const handle = properties.get(String(index));
+                if (handle === undefined) {
+                  throw new Error("Observation element binding failed.");
+                }
+                handles.push(handle as unknown as ElementHandle<Element>);
+              }
+              storedElements = raw.elements;
+              storedHandles = handles;
+              return raw;
+            } finally {
+              eligible.dispose();
+            }
+          } finally {
+            snapshot.dispose();
+          }
         },
         async clickElement(targetId) {
           const match = /^element-(\d+)$/.exec(targetId);
-          const element = match
-            ? storedElements[Number(match[1])]
+          const index = match ? Number(match[1]) : Number.NaN;
+          const element = Number.isInteger(index)
+            ? storedElements[index]
             : undefined;
-          if (!element) {
+          const handle = Number.isInteger(index)
+            ? storedHandles[index]
+            : undefined;
+          if (!element || !handle) {
             throw new Error("Unknown element id.");
           }
-          await withOriginGuard(() =>
-            page
-              .getByRole(element.role, { name: element.name, exact: true })
-              .nth(element.occurrence)
-              .click(),
-          );
+          await withOriginGuard(async () => {
+            // The handle IS the node observe() collected — no re-resolution,
+            // no index math. If the node left the page since the
+            // observation, fail instead of clicking whatever now sits at
+            // its old position.
+            const connected = await handle
+              .evaluate((node) => node.isConnected)
+              .catch(() => false);
+            if (!connected) {
+              throw new Error("Observed element is no longer in the page.");
+            }
+            await handle.click();
+          });
         },
         async completionState() {
           return withOriginGuard(async () => {
