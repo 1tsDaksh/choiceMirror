@@ -9,6 +9,7 @@ import { isAllowlistedUrl } from "./allowlist";
 import { createPlaywrightOpenJourney } from "./driver";
 import { BlockedError } from "./errors";
 import { limits } from "./limits";
+import type { RawPageState } from "./observation";
 
 export type JourneyExecutionResult = {
   status: "completed" | "failed" | "timeout" | "blocked";
@@ -31,6 +32,22 @@ export type JourneyDriver = {
 
 export type OpenJourney = () => Promise<{
   driver: JourneyDriver;
+  close(): Promise<void>;
+}>;
+
+/**
+ * Phase 3: the deterministic journey driver plus observation primitives the
+ * AI loop needs. Assignable to JourneyDriver everywhere deterministic code
+ * runs, so createPlaywrightOpenJourney can serve both modes.
+ */
+export type AiJourneyDriver = JourneyDriver & {
+  observe(): Promise<RawPageState>;
+  clickElement(targetId: string): Promise<void>;
+  completionState(): Promise<{ complete: boolean; detail?: string }>;
+};
+
+export type OpenAiJourney = () => Promise<{
+  driver: AiJourneyDriver;
   close(): Promise<void>;
 }>;
 

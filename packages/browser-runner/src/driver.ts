@@ -1,9 +1,12 @@
 import { chromium } from "playwright";
 
+import { OBSERVATION_LIMITS } from "@choicemirror/contracts";
+
 import { isAllowedRequestUrl, sanitizeUrl } from "./allowlist";
 import { BlockedError } from "./errors";
 import { limits } from "./limits";
-import type { JourneyDriver, OpenJourney } from "./runner";
+import type { RawElement, RawPageState } from "./observation";
+import type { AiJourneyDriver, OpenAiJourney } from "./runner";
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -15,7 +18,7 @@ const MAX_REDIRECT_HOPS = 20;
 export function createPlaywrightOpenJourney(options: {
   origin: string;
   viewport?: { width: number; height: number };
-}): OpenJourney {
+}): OpenAiJourney {
   return async () => {
     const browser = await chromium.launch();
     try {
@@ -157,7 +160,14 @@ export function createPlaywrightOpenJourney(options: {
         }
       };
 
-      const driver: JourneyDriver = {
+      /**
+       * Elements from the most recent observe(), in collection order — the
+       * exact array buildObservation assigns `element-N` ids over, so a
+       * targetId always resolves to the element the model was shown.
+       */
+      let storedElements: RawElement[] = [];
+
+      const driver: AiJourneyDriver = {
         async navigate(url) {
           // Defense in depth: refuse to even attempt a URL outside the
           // trusted origin, then rely on interception for everything the
@@ -206,6 +216,136 @@ export function createPlaywrightOpenJourney(options: {
         },
         async currentUrl() {
           return page.url();
+        },
+        async observe() {
+          // Collected in-page: accessible-name-first, bounded, no HTML.
+          // Empty-name elements are dropped here — before id assignment —
+          // so the stored order matches buildObservation exactly.
+          const raw = await withOriginGuard(() =>
+            page.evaluate(
+              ({ maxElements, maxHeadings }) => {
+                const clean = (value: string | null | undefined): string =>
+                  (value ?? "").trim();
+                const nameOf = (element: Element): string => {
+                  const aria = clean(element.getAttribute("aria-label"));
+                  if (aria) return aria;
+                  const inner = clean((element as HTMLElement).innerText);
+                  if (inner) return inner;
+                  const value = clean(
+                    "value" in element
+                      ? (element as HTMLInputElement).value
+                      : undefined,
+                  );
+                  if (value) return value;
+                  return clean(element.getAttribute("title"));
+                };
+
+                const elements: Array<{
+                  role: "button" | "link";
+                  name: string;
+                  enabled: boolean;
+                  occurrence: number;
+                }> = [];
+                const occurrences = new Map<string, number>();
+                const candidates = document.querySelectorAll(
+                  'button, a[href], [role="button"]',
+                );
+                for (const element of candidates) {
+                  if (elements.length >= maxElements) break;
+                  const role: "button" | "link" =
+                    element.tagName === "BUTTON" ||
+                    element.getAttribute("role") === "button"
+                      ? "button"
+                      : "link";
+                  const name = nameOf(element);
+                  if (!name) continue;
+                  const key = `${role} ${name}`;
+                  const occurrence = occurrences.get(key) ?? 0;
+                  occurrences.set(key, occurrence + 1);
+                  const enabled =
+                    !((element as HTMLButtonElement).disabled ?? false) &&
+                    element.getAttribute("aria-disabled") !== "true";
+                  elements.push({ role, name, enabled, occurrence });
+                }
+
+                const headings: string[] = [];
+                for (const heading of document.querySelectorAll(
+                  "h1, h2, h3",
+                )) {
+                  if (headings.length >= maxHeadings) break;
+                  const text = clean((heading as HTMLElement).innerText);
+                  if (text) headings.push(text);
+                }
+
+                return {
+                  url: location.href,
+                  title: document.title,
+                  headings,
+                  text: document.body?.innerText ?? "",
+                  elements,
+                };
+              },
+              {
+                maxElements: OBSERVATION_LIMITS.MAX_ELEMENTS,
+                maxHeadings: OBSERVATION_LIMITS.MAX_HEADINGS,
+              },
+            ),
+          );
+          storedElements = raw.elements;
+          return raw;
+        },
+        async clickElement(targetId) {
+          const match = /^element-(\d+)$/.exec(targetId);
+          const element = match
+            ? storedElements[Number(match[1])]
+            : undefined;
+          if (!element) {
+            throw new Error("Unknown element id.");
+          }
+          await withOriginGuard(() =>
+            page
+              .getByRole(element.role, { name: element.name, exact: true })
+              .nth(element.occurrence)
+              .click(),
+          );
+        },
+        async completionState() {
+          return withOriginGuard(async () => {
+            let visible = false;
+            try {
+              visible = await page
+                .getByRole("heading", { name: "Goal completed" })
+                .first()
+                .isVisible();
+            } catch {
+              visible = false;
+            }
+            if (!visible) {
+              return { complete: false };
+            }
+            let text: string | null = null;
+            try {
+              text = await page
+                .getByText(/^Completed in \d+ action/)
+                .first()
+                .textContent();
+            } catch {
+              text = null;
+            }
+            const matches =
+              text !== null &&
+              /^Completed in \d+ actions?\. No data was submitted\.$/.test(text);
+            if (matches) {
+              return { complete: true };
+            }
+            // Heading visible but text missing/mismatched: never falsely
+            // complete. Detail stays generic — page text is untrusted and
+            // must not flow into evidence.
+            return {
+              complete: false,
+              detail: "Completion text did not match the expected pattern.",
+            };
+          });
         },
       };
 
