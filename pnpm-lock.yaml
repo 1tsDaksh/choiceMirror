@@ -166,6 +166,9 @@ importers:
 
   .:
     devDependencies:
+      '@choicemirror/agent':
+        specifier: workspace:^
+        version: link:packages/agent
       '@choicemirror/browser-runner':
         specifier: workspace:^
         version: link:packages/browser-runner

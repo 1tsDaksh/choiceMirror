@@ -15,6 +15,7 @@
     "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@choicemirror/agent": "workspace:^",
     "@choicemirror/browser-runner": "workspace:^",
     "@choicemirror/contracts": "workspace:^",
     "@playwright/test": "^1.65.1",
