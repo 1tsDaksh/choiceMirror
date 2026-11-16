@@ -33,15 +33,24 @@ function isAbortError(error: unknown): boolean {
 }
 
 /**
- * Runs one fetch with a hard timeout. The abort races the underlying request
- * so even a fetch implementation that ignores the signal cannot hang us.
+ * One fetch attempt under a single deadline that stays armed until
+ * finish() is called — covering the response headers *and* the body read.
+ * The abort races both the request and any later body read, so a response
+ * that sends headers then stalls fails as a timeout, and even a fetch
+ * implementation that ignores the signal cannot hang us.
  */
-function fetchWithTimeout(
+type FetchAttempt = {
+  response: Promise<Response>;
+  aborted: Promise<never>;
+  finish: () => void;
+};
+
+function startFetchAttempt(
   fetchFn: typeof fetch,
   url: string,
   init: RequestInit,
   timeoutMs: number,
-): Promise<Response> {
+): FetchAttempt {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const aborted = new Promise<never>((_, reject) => {
@@ -55,10 +64,15 @@ function fetchWithTimeout(
       { once: true },
     );
   });
-  return Promise.race([
+  const response = Promise.race([
     fetchFn(url, { ...init, signal: controller.signal }),
     aborted,
-  ]).finally(() => clearTimeout(timer)) as Promise<Response>;
+  ]);
+  return {
+    response,
+    aborted,
+    finish: () => clearTimeout(timer),
+  };
 }
 
 function mapUsage(raw: unknown): TokenUsage {
@@ -167,66 +181,88 @@ export function createNebiusClient(
 
       while (true) {
         attempts += 1;
-        let response: Response;
+        const attempt = startFetchAttempt(
+          fetchFn,
+          url,
+          init,
+          config.timeoutMs,
+        );
         try {
-          response = await fetchWithTimeout(
-            fetchFn,
-            url,
-            init,
-            config.timeoutMs,
-          );
-        } catch (error) {
-          if (attempts >= maxAttempts) {
-            throw isAbortError(error)
-              ? transientError("timeout", attempts)
-              : transientError("network", attempts);
-          }
-          await sleep(config.retryBackoffMs);
-          continue;
-        }
-
-        if (!response.ok) {
-          if (isRetryableStatus(response.status) && attempts < maxAttempts) {
+          let response: Response;
+          try {
+            response = await attempt.response;
+          } catch (error) {
+            if (attempts >= maxAttempts) {
+              throw isAbortError(error)
+                ? transientError("timeout", attempts)
+                : transientError("network", attempts);
+            }
             await sleep(config.retryBackoffMs);
             continue;
           }
-          throw statusError(response.status, attempts);
-        }
 
-        let payload: unknown;
-        try {
-          payload = JSON.parse(await response.text());
-        } catch {
-          payload = undefined;
-        }
-        const content =
-          typeof payload === "object" && payload !== null
-            ? (payload as { choices?: Array<{ message?: { content?: unknown } }> })
-                .choices?.[0]?.message?.content
-            : undefined;
-
-        if (typeof content !== "string" || content.length === 0) {
-          if (attempts >= malformedAttempts) {
-            throw new NebiusAgentError(
-              "malformed",
-              "Nebius returned an invalid response body.",
-              attempts,
-            );
+          if (!response.ok) {
+            if (isRetryableStatus(response.status) && attempts < maxAttempts) {
+              await sleep(config.retryBackoffMs);
+              continue;
+            }
+            throw statusError(response.status, attempts);
           }
-          await sleep(config.retryBackoffMs);
-          continue;
-        }
 
-        const record =
-          typeof payload === "object" && payload !== null
-            ? (payload as Record<string, unknown>)
-            : {};
-        return {
-          content,
-          usage: mapUsage(record.usage),
-          latencyMs: Date.now() - startedAt,
-          apiCalls: attempts,
-        };
+          let text: string;
+          try {
+            // The body read runs under the same deadline as the headers: a
+            // response that stalls after sending them must fail as a
+            // timeout instead of hanging the inference client unbounded.
+            text = await Promise.race([response.text(), attempt.aborted]);
+          } catch (error) {
+            if (attempts >= maxAttempts) {
+              throw isAbortError(error)
+                ? transientError("timeout", attempts)
+                : transientError("network", attempts);
+            }
+            await sleep(config.retryBackoffMs);
+            continue;
+          }
+
+          let payload: unknown;
+          try {
+            payload = JSON.parse(text);
+          } catch {
+            payload = undefined;
+          }
+          const content =
+            typeof payload === "object" && payload !== null
+              ? (payload as { choices?: Array<{ message?: { content?: unknown } }> })
+                  .choices?.[0]?.message?.content
+              : undefined;
+
+          if (typeof content !== "string" || content.length === 0) {
+            if (attempts >= malformedAttempts) {
+              throw new NebiusAgentError(
+                "malformed",
+                "Nebius returned an invalid response body.",
+                attempts,
+              );
+            }
+            await sleep(config.retryBackoffMs);
+            continue;
+          }
+
+          const record =
+            typeof payload === "object" && payload !== null
+              ? (payload as Record<string, unknown>)
+              : {};
+          return {
+            content,
+            usage: mapUsage(record.usage),
+            latencyMs: Date.now() - startedAt,
+            apiCalls: attempts,
+          };
+        } finally {
+          // Every path releases the deadline: success, retry, and throw.
+          attempt.finish();
+        }
       }
     },
   };

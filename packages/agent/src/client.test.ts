@@ -70,9 +70,11 @@ describe("createNebiusClient", () => {
   });
 
   it("throws malformed after two invalid bodies", async () => {
+    // Fresh body per attempt, like a real server: each response is
+    // individually readable but never parses as the expected payload.
     const fetchFn = vi
       .fn()
-      .mockResolvedValue(new Response("not json", { status: 200 }));
+      .mockImplementation(() => new Response("not json", { status: 200 }));
     const client = createNebiusClient(config(), asFetch(fetchFn));
 
     const error = await client.chat(MESSAGES).catch((e: unknown) => e);
@@ -175,5 +177,35 @@ describe("createNebiusClient", () => {
     expect(error.kind).toBe("timeout");
     expect(fetchFn.mock.calls.length).toBeLessThanOrEqual(3);
     expect(fetchFn.mock.calls.length).toBeGreaterThanOrEqual(1);
+  }, 10_000);
+
+  it("bounds a response whose body stalls after the headers", async () => {
+    // Headers arrive immediately; the body stream never yields a byte and
+    // never closes. Without the deadline covering the body read this would
+    // hang the inference client forever — the abort must race response.text().
+    const stalled = new Response(
+      new ReadableStream({
+        start() {
+          // Intentionally never enqueue or close.
+        },
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+    const fetchFn = vi.fn().mockResolvedValue(stalled);
+    const client = createNebiusClient(
+      config({ timeoutMs: 50, maxRetries: 0 }),
+      asFetch(fetchFn),
+    );
+
+    const startedAt = Date.now();
+    const error = (await client
+      .chat(MESSAGES)
+      .catch((e: unknown) => e)) as NebiusAgentError;
+
+    expect(error).toBeInstanceOf(NebiusAgentError);
+    expect(error.kind).toBe("timeout");
+    expect(error.apiCalls).toBe(1);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    expect(Date.now() - startedAt).toBeLessThan(5_000);
   }, 10_000);
 });
