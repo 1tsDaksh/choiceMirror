@@ -56,7 +56,7 @@ function actionWord(count: number): string {
   return `recorded action${count === 1 ? "" : "s"}`;
 }
 
-function standardLimitations(hasAi: boolean): string[] {
+export function standardLimitations(hasAi: boolean): string[] {
   const limitations = [
     DISCLAIMER,
     SINGLE_RUN_LIMITATION,

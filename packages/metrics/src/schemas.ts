@@ -101,3 +101,17 @@ export type FindingCategory = z.infer<typeof findingCategorySchema>;
 export type FindingQuality = z.infer<typeof findingQualitySchema>;
 export type FindingEvidence = z.infer<typeof findingEvidenceSchema>;
 export type Finding = z.infer<typeof findingSchema>;
+
+export const validationResultSchema = z.object({
+  valid: z.boolean(),
+  problems: z.array(z.string()),
+});
+
+export const comparisonReportSchema = z.object({
+  metrics: comparisonMetricsSchema,
+  findings: z.array(findingSchema).length(1),
+  validation: validationResultSchema,
+});
+
+export type ValidationResult = z.infer<typeof validationResultSchema>;
+export type ComparisonReport = z.infer<typeof comparisonReportSchema>;
