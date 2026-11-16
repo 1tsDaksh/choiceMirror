@@ -1,4 +1,4 @@
-import { goalIdSchema } from "@choicemirror/contracts";
+import { comparisonStatusSchema, goalIdSchema } from "@choicemirror/contracts";
 import { z } from "zod";
 
 export const journeyOutcomeSchema = z.enum([
@@ -39,3 +39,29 @@ export type JourneyOutcome = z.infer<typeof journeyOutcomeSchema>;
 export type JourneyAiMetrics = z.infer<typeof journeyAiMetricsSchema>;
 export type JourneyEvidence = z.infer<typeof journeyEvidenceSchema>;
 export type JourneyMetrics = z.infer<typeof journeyMetricsSchema>;
+
+export const comparisonResultSchema = z.enum([
+  "balanced",
+  "observed-asymmetry",
+  "inconclusive",
+]);
+
+export const comparableConditionsSchema = z.object({
+  comparable: z.boolean(),
+  reasons: z.array(z.string()),
+});
+
+export const comparisonMetricsSchema = z.object({
+  comparisonId: z.string(),
+  status: comparisonStatusSchema,
+  journeys: z.tuple([journeyMetricsSchema, journeyMetricsSchema]),
+  actionDifference: z.number().int().nonnegative().nullable(),
+  heavierJourney: z.enum(["a", "b"]).nullable(),
+  actionRatio: z.number().nullable(),
+  comparableConditions: comparableConditionsSchema,
+  result: comparisonResultSchema,
+});
+
+export type ComparisonResult = z.infer<typeof comparisonResultSchema>;
+export type ComparableConditions = z.infer<typeof comparableConditionsSchema>;
+export type ComparisonMetrics = z.infer<typeof comparisonMetricsSchema>;
