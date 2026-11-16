@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PageObservation } from "@choicemirror/contracts";
-import { nebiusConfig, PROMPT_VERSION, type NebiusConfig } from "./config.js";
-import { NebiusAgentError } from "./errors.js";
-import type { ChatClient, ChatResult } from "./client.js";
-import { createNebiusAgent } from "./agent.js";
+import { nebiusConfig, PROMPT_VERSION, type NebiusConfig } from "./config";
+import { NebiusAgentError } from "./errors";
+import type { ChatClient, ChatResult } from "./client";
+import { createNebiusAgent } from "./agent";
 
 const OBSERVATION: PageObservation = {
   ref: "obs-1",

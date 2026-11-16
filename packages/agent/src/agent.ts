@@ -6,10 +6,10 @@ import type {
   NavigationAgent,
 } from "@choicemirror/contracts";
 import { actionProposalSchema } from "@choicemirror/contracts";
-import { PROMPT_VERSION, type NebiusConfig } from "./config.js";
-import { createNebiusClient, type ChatClient } from "./client.js";
-import { NebiusAgentError } from "./errors.js";
-import { buildMessages } from "./prompt.js";
+import { PROMPT_VERSION, type NebiusConfig } from "./config";
+import { createNebiusClient, type ChatClient } from "./client";
+import { NebiusAgentError } from "./errors";
+import { buildMessages } from "./prompt";
 
 const REASK_FEEDBACK =
   "Your last reply was not valid JSON matching the schema. Reply with only the JSON object.";

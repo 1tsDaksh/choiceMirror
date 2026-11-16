@@ -5,7 +5,7 @@ import {
   SYSTEM_PROMPT,
   buildMessages,
   type DeciderInput,
-} from "./prompt.js";
+} from "./prompt";
 
 const OBSERVATION_A: PageObservation = {
   ref: "obs-1",

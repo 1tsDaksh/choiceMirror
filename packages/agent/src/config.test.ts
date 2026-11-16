@@ -10,7 +10,7 @@ import {
   NEBIUS_TIMEOUT_MS,
   nebiusConfig,
   nebiusConfigFromEnv,
-} from "./config.js";
+} from "./config";
 
 describe("nebiusConfigFromEnv", () => {
   it("returns null when the key is missing or blank", () => {

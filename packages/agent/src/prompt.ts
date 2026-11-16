@@ -1,5 +1,5 @@
 import type { DeciderInput, PageObservation } from "@choicemirror/contracts";
-import { PROMPT_VERSION } from "./config.js";
+import { PROMPT_VERSION } from "./config";
 
 export { PROMPT_VERSION };
 

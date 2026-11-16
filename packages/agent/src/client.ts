@@ -1,7 +1,7 @@
 import type { TokenUsage } from "@choicemirror/contracts";
-import type { NebiusConfig } from "./config.js";
-import { NebiusAgentError } from "./errors.js";
-import type { ChatMessage } from "./prompt.js";
+import type { NebiusConfig } from "./config";
+import { NebiusAgentError } from "./errors";
+import type { ChatMessage } from "./prompt";
 
 export type ChatResult = {
   content: string;

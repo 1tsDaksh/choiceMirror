@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { NebiusConfig } from "./config.js";
-import { nebiusConfig } from "./config.js";
-import { NebiusAgentError } from "./errors.js";
-import { createNebiusClient } from "./client.js";
+import type { NebiusConfig } from "./config";
+import { nebiusConfig } from "./config";
+import { NebiusAgentError } from "./errors";
+import { createNebiusClient } from "./client";
 
 const KEY = "secret-key-value";
 
