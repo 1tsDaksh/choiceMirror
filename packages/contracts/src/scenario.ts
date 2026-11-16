@@ -7,6 +7,8 @@ export const scenarioIdSchema = z.enum([
   "consent-asymmetric",
 ]);
 
+export const executionModeSchema = z.enum(["deterministic", "ai"]);
+
 export const goalIdSchema = z.enum([
   "join",
   "leave",
@@ -41,7 +43,10 @@ export const scenarioListSchema = z.array(scenarioSchema);
 export const comparisonRequestSchema = z.object({
   scenarioId: scenarioIdSchema,
   goalIds: z.tuple([goalIdSchema, goalIdSchema]),
+  mode: executionModeSchema.optional(),
 });
+
+export type ExecutionMode = z.infer<typeof executionModeSchema>;
 
 export type Goal = z.infer<typeof goalSchema>;
 export type ExpectedAction = z.infer<typeof expectedActionSchema>;

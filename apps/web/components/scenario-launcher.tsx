@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import type { Scenario } from "@choicemirror/contracts";
+import type { ExecutionMode, Scenario } from "@choicemirror/contracts";
 
 import { ComparisonState } from "@/components/comparison-state";
 import { loadScenarios } from "@/lib/load-scenarios";
@@ -18,6 +18,24 @@ type RunState =
   | { status: "idle" }
   | { status: "starting" }
   | { status: "error"; message: string };
+
+const MODE_OPTIONS: {
+  value: ExecutionMode;
+  title: string;
+  description: string;
+}[] = [
+  {
+    value: "deterministic",
+    title: "Deterministic",
+    description: "Replays the app's own validated action plan.",
+  },
+  {
+    value: "ai",
+    title: "AI (Nebius)",
+    description:
+      "The model observes each page and chooses the next validated action.",
+  },
+];
 
 type ScenarioLauncherProps = {
   initialScenarios: Scenario[];
@@ -51,6 +69,7 @@ export function ScenarioLauncher({
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(
     null,
   );
+  const [mode, setMode] = useState<ExecutionMode>("deterministic");
   const [runState, setRunState] = useState<RunState>({ status: "idle" });
 
   const retryScenarios = () => {
@@ -119,6 +138,7 @@ export function ScenarioLauncher({
           scenarioId: selectedScenario.id,
           // Catalog order is the contract: Goal A first, Goal B second.
           goalIds: selectedScenario.goals.map((goal) => goal.id),
+          mode,
         }),
       });
 
@@ -134,6 +154,22 @@ export function ScenarioLauncher({
         setRunState({
           status: "error",
           message: "The comparison could not be started.",
+        });
+        return;
+      }
+
+      if (response.status === 503) {
+        // Show the server's reason verbatim so the operator knows exactly
+        // what to configure — never a silent fallback to deterministic.
+        const body = (await response.json().catch(() => null)) as {
+          error?: unknown;
+        } | null;
+        setRunState({
+          status: "error",
+          message:
+            typeof body?.error === "string"
+              ? body.error
+              : "AI mode is not configured.",
         });
         return;
       }
@@ -223,6 +259,42 @@ export function ScenarioLauncher({
         </div>
       </fieldset>
 
+      <fieldset className="rounded-2xl border border-white/10 bg-surface p-4 sm:p-5">
+        <legend className="px-2 font-mono text-xs uppercase tracking-widest text-journey-b">
+          Execution mode
+        </legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {MODE_OPTIONS.map((option) => (
+            <label
+              key={option.value}
+              className={`has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-highlight flex cursor-pointer flex-col gap-2 rounded-xl border p-4 transition-colors ${
+                mode === option.value
+                  ? "border-highlight bg-highlight/10"
+                  : "border-white/10 bg-elevated hover:border-highlight/50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="mode"
+                value={option.value}
+                checked={mode === option.value}
+                onChange={() => {
+                  setMode(option.value);
+                  // A stale error from another mode must not follow the
+                  // selection.
+                  setRunState({ status: "idle" });
+                }}
+                className="sr-only"
+              />
+              <span className="font-semibold">{option.title}</span>
+              <span className="text-sm text-secondary-text">
+                {option.description}
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       {selectedScenario ? (
         <section
           className="rounded-2xl border border-white/10 bg-surface p-4 sm:p-5"
@@ -291,7 +363,9 @@ export function ScenarioLauncher({
               </p>
             ) : null}
             <p className="text-sm text-secondary-text">
-              Runs execute locally against the benchmark app with fixed limits.
+              {mode === "ai"
+                ? "AI mode lets the Nebius model observe each page and choose the next validated action. Runs execute locally with fixed limits."
+                : "Runs execute locally against the benchmark app with fixed limits."}
             </p>
           </div>
         </section>

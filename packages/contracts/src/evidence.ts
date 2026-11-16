@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto";
 
 import { z } from "zod";
 
-import { goalIdSchema, scenarioIdSchema } from "./scenario";
+import { aiEventSchema, aiJourneySummarySchema } from "./agent";
+import { executionModeSchema, goalIdSchema, scenarioIdSchema } from "./scenario";
 
 export const comparisonIdSchema = z
   .string()
@@ -28,6 +29,8 @@ export const traceEventSchema = z.object({
   countsAsAction: z.boolean(),
   detail: z.string().optional(),
   screenshotId: z.string().optional(),
+  // Phase 3: present only on events driven by a model decision.
+  ai: aiEventSchema.optional(),
 });
 
 export const journeyStatusSchema = z.enum([
@@ -57,6 +60,9 @@ export const journeyRecordSchema = z.object({
     z.object({ id: z.string(), label: z.string().min(1) }),
   ),
   error: z.string().optional(),
+  // Phase 3: absent on phase 2 records (treated as deterministic, no AI run).
+  mode: executionModeSchema.optional(),
+  ai: aiJourneySummarySchema.optional(),
 });
 
 export const comparisonStatusSchema = z.enum([
@@ -74,6 +80,8 @@ export const comparisonRecordSchema = z.object({
   createdAt: z.string().datetime(),
   completedAt: z.string().datetime().optional(),
   error: z.string().optional(),
+  // Phase 3: absent on phase 2 records (displayed as deterministic).
+  mode: executionModeSchema.optional(),
 });
 
 export const comparisonDetailSchema = z.object({

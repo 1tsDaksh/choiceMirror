@@ -6,6 +6,9 @@ const origin = "http://benchmark.test";
 
 const mocks = vi.hoisted(() => ({
   runJourney: vi.fn(),
+  runAiJourney: vi.fn(),
+  createAiAgent: vi.fn(),
+  aiModelId: vi.fn(),
   getComparison: vi.fn(),
   saveComparison: vi.fn(),
   saveJourney: vi.fn(),
@@ -14,6 +17,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@choicemirror/browser-runner", () => ({
   runJourney: mocks.runJourney,
+  runAiJourney: mocks.runAiJourney,
   createPlaywrightOpenJourney: vi.fn(() => vi.fn()),
   limits: {
     MAX_ACTIONS: 10,
@@ -21,6 +25,12 @@ vi.mock("@choicemirror/browser-runner", () => ({
     JOURNEY_TIMEOUT_MS: 60_000,
     VIEWPORT: { width: 1280, height: 720 },
   },
+}));
+
+vi.mock("./ai-agent", () => ({
+  isAiConfigured: vi.fn(() => true),
+  createAiAgent: mocks.createAiAgent,
+  aiModelId: mocks.aiModelId,
 }));
 
 vi.mock("./comparison-store", () => ({
@@ -49,6 +59,15 @@ function runningRecord(): ComparisonRecord {
     seed: "phase-2",
     status: "running",
     createdAt: "2026-11-14T10:00:00.000Z",
+  };
+}
+
+function aiRecord(): ComparisonRecord {
+  return {
+    ...runningRecord(),
+    scenarioId: "membership-asymmetric",
+    goalIds: ["join", "leave"],
+    mode: "ai",
   };
 }
 
@@ -87,10 +106,35 @@ function journeyResult(goalId: string) {
   };
 }
 
+const AI_SUMMARY = {
+  provider: "nebius",
+  model: "test-model",
+  promptVersion: "phase3-v1",
+  inferenceCalls: 3,
+  inputTokens: 120,
+  outputTokens: 45,
+  rejectedProposals: 1,
+  modelErrors: [],
+} as const;
+
+function aiJourneyResult(goalId: string) {
+  return { ...journeyResult(goalId), ai: { ...AI_SUMMARY } };
+}
+
+function fakeAgent() {
+  return {
+    decide: vi.fn(),
+    summary: vi.fn(() => ({ ...AI_SUMMARY, rejectedProposals: 0 })),
+  };
+}
+
 describe("startComparisonRun", () => {
   beforeEach(() => {
     vi.stubEnv("BENCHMARK_ORIGIN", origin);
     mocks.runJourney.mockReset();
+    mocks.runAiJourney.mockReset();
+    mocks.createAiAgent.mockReset();
+    mocks.aiModelId.mockReset();
     mocks.getComparison.mockReset();
     mocks.saveComparison.mockReset();
     mocks.saveJourney.mockReset();
@@ -99,6 +143,10 @@ describe("startComparisonRun", () => {
     mocks.runJourney.mockImplementation((options: { plan: { goalId: string } }) =>
       Promise.resolve(journeyResult(options.plan.goalId)),
     );
+    mocks.runAiJourney.mockImplementation((options: { goalId: string }) =>
+      Promise.resolve(aiJourneyResult(options.goalId)),
+    );
+    mocks.aiModelId.mockReturnValue("test-model");
   });
 
   afterEach(() => {
@@ -209,6 +257,85 @@ describe("startComparisonRun", () => {
     release?.();
 
     await run;
+
+    expect(hasActiveRun()).toBe(false);
+    expect(activeComparisonId()).toBeNull();
+  });
+
+  it("runs ai mode with a fresh agent per goal and no plan in sight", async () => {
+    const agent = fakeAgent();
+    mocks.getComparison.mockResolvedValue(aiRecord());
+    mocks.createAiAgent.mockReturnValue(agent);
+
+    await startComparisonRun(comparisonId);
+
+    expect(mocks.runJourney).not.toHaveBeenCalled();
+    expect(mocks.runAiJourney).toHaveBeenCalledTimes(2);
+    expect(mocks.createAiAgent).toHaveBeenCalledTimes(2);
+
+    const calls = mocks.runAiJourney.mock.calls.map((call) => call[0]);
+    expect(calls.map((options) => options.goalId)).toEqual(["join", "leave"]);
+    // Goal text comes from the catalog — the model never sees a plan.
+    expect(calls[0].goalDescription).toBe("Join the synthetic workspace.");
+    expect(calls[1].goalDescription).toBe(
+      "Leave the synthetic workspace through three review steps.",
+    );
+    expect(calls[1].path).toBe("/membership-asymmetric");
+    expect(calls[0].expectedActionCount).toBe(1);
+    expect(calls[1].expectedActionCount).toBe(3);
+    expect(calls[0].decider).toBe(agent);
+    expect(calls[1].decider).toBe(agent);
+    expect(calls[0].aiMeta).toEqual({
+      provider: "nebius",
+      model: "test-model",
+      promptVersion: "phase3-v1",
+    });
+    expect(calls.every((options) => options.seed === "phase-2")).toBe(true);
+    expect(calls.every((options) => options.origin === origin)).toBe(true);
+    expect(typeof calls[0].openJourney).toBe("function");
+
+    const journeys = mocks.saveJourney.mock.calls.map((call) => call[0]);
+    expect(journeys).toHaveLength(2);
+    expect(journeys.every((journey) => journey.mode === "ai")).toBe(true);
+    expect(journeys[0].ai).toEqual(AI_SUMMARY);
+    expect(journeys[1].ai).toEqual(AI_SUMMARY);
+    expect(journeys[1].expectedActionCount).toBe(3);
+
+    const finalRecord = mocks.saveComparison.mock.calls[0]![0];
+    expect(finalRecord.status).toBe("completed");
+    expect(finalRecord.mode).toBe("ai");
+  });
+
+  it("persists deterministic mode when the record carries no mode", async () => {
+    await startComparisonRun(comparisonId);
+
+    expect(mocks.runAiJourney).not.toHaveBeenCalled();
+    expect(mocks.runJourney).toHaveBeenCalledTimes(2);
+
+    const journeys = mocks.saveJourney.mock.calls.map((call) => call[0]);
+    expect(journeys).toHaveLength(2);
+    expect(
+      journeys.every((journey) => journey.mode === "deterministic"),
+    ).toBe(true);
+    expect(journeys.every((journey) => journey.ai === undefined)).toBe(true);
+  });
+
+  it("fails honestly when ai mode loses its configuration mid-flight", async () => {
+    const agent = fakeAgent();
+    mocks.getComparison.mockResolvedValue(aiRecord());
+    // First goal runs, then the key disappears: the second agent is null.
+    mocks.createAiAgent.mockReturnValueOnce(agent).mockReturnValueOnce(null);
+
+    await startComparisonRun(comparisonId);
+
+    expect(mocks.runAiJourney).toHaveBeenCalledTimes(1);
+    // The finished first journey stays on disk as honest partial evidence.
+    expect(mocks.saveJourney).toHaveBeenCalledTimes(1);
+
+    const failedRecord = mocks.saveComparison.mock.calls.at(-1)![0];
+    expect(failedRecord.status).toBe("failed");
+    expect(failedRecord.error).toBe("AI mode is not configured.");
+    expect(failedRecord.completedAt).toBeDefined();
 
     expect(hasActiveRun()).toBe(false);
     expect(activeComparisonId()).toBeNull();

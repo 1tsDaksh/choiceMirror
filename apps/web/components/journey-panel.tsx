@@ -1,4 +1,4 @@
-import type { JourneyRecord } from "@choicemirror/contracts";
+import type { AiEvent, JourneyRecord } from "@choicemirror/contracts";
 
 type JourneyPanelProps = {
   journey: JourneyRecord | undefined;
@@ -15,10 +15,41 @@ const statusBadges: Record<
   blocked: { label: "Blocked", className: "bg-warning/15 text-warning" },
 };
 
+const validationBadges: Record<
+  AiEvent["validation"],
+  { className: string }
+> = {
+  executed: { className: "bg-success/15 text-success" },
+  rejected: { className: "bg-warning/15 text-warning" },
+  "model-error": { className: "bg-error/15 text-error" },
+};
+
 const waitingBadge = {
   label: "Waiting",
   className: "bg-white/10 text-secondary-text",
 };
+
+function formatTokenCount(count: number): string {
+  if (count < 1_000) {
+    return String(count);
+  }
+  const thousands = count / 1_000;
+  const rounded =
+    thousands >= 10 ? Math.round(thousands) : Math.round(thousands * 10) / 10;
+  return `${rounded}k`;
+}
+
+/** "1.2k tok · 840 ms" — only the parts that exist. */
+function usageLine(ai: AiEvent): string | null {
+  const parts: string[] = [];
+  if (ai.usage !== undefined) {
+    parts.push(`${formatTokenCount(ai.usage.totalTokens)} tok`);
+  }
+  if (ai.latencyMs !== undefined) {
+    parts.push(`${ai.latencyMs} ms`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
 
 export function JourneyPanel({ journey, goalIndex }: JourneyPanelProps) {
   const goalLetter = goalIndex === 0 ? "A" : "B";
@@ -61,6 +92,36 @@ export function JourneyPanel({ journey, goalIndex }: JourneyPanelProps) {
         </p>
       )}
 
+      {journey?.ai ? (
+        <div className="mt-4 rounded-xl border border-white/10 bg-elevated p-3">
+          <p className="font-mono text-xs uppercase tracking-widest text-highlight">
+            AI decisions (model-reported)
+          </p>
+          <p className="mt-2 text-xs text-secondary-text">
+            Model statements are recorded as reported, not independently
+            verified.
+          </p>
+          <p className="mt-2 text-sm">
+            {`${journey.ai.provider} · ${journey.ai.model} · prompt ${journey.ai.promptVersion}`}
+          </p>
+          <p className="mt-1 text-sm text-secondary-text">
+            {`${journey.ai.inferenceCalls} inference calls · ${journey.ai.inputTokens} input / ${journey.ai.outputTokens} output tokens · ${journey.ai.rejectedProposals} rejected proposals`}
+          </p>
+          {journey.ai.modelErrors.length > 0 ? (
+            <ul className="mt-2 space-y-1">
+              {journey.ai.modelErrors.map((modelError, index) => (
+                <li
+                  key={`${modelError.kind}-${index}`}
+                  className="text-xs text-error"
+                >
+                  {`${modelError.kind}: ${modelError.message}`}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+
       {events.length > 0 ? (
         <div className="mt-4">
           <p className="font-mono text-xs uppercase tracking-widest text-secondary-text">
@@ -98,6 +159,32 @@ export function JourneyPanel({ journey, goalIndex }: JourneyPanelProps) {
                   </span>
                 </div>
                 <p className="mt-1 text-sm">{event.label}</p>
+                {event.ai ? (
+                  <div className="mt-1 space-y-1">
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs">
+                        {`proposed: ${event.ai.proposed.action}${
+                          event.ai.proposed.action === "click"
+                            ? ` · ${event.ai.proposed.targetId}`
+                            : ""
+                        }`}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${validationBadges[event.ai.validation].className}`}
+                      >
+                        {event.ai.validation}
+                      </span>
+                    </p>
+                    <p className="text-xs text-secondary-text">
+                      {event.ai.proposed.reason}
+                    </p>
+                    {usageLine(event.ai) !== null ? (
+                      <p className="font-mono text-xs text-secondary-text">
+                        {usageLine(event.ai)}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 {event.detail ? (
                   <p className="mt-1 text-xs text-secondary-text">
                     {event.detail}

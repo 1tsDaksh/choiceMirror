@@ -3,6 +3,11 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
+  // Every spec drives the single-flight POST /api/comparisons lock, so
+  // parallel workers make cross-file runs collide (a UI run in one worker
+  // answers 429 to an API test in another). One worker keeps the suite
+  // deterministic without touching the Phase 1/2 specs.
+  workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI
@@ -26,6 +31,14 @@ export default defineConfig({
       url: "http://localhost:3000",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
+      // Playwright's `env` replaces process.env unless spread, so the mock
+      // endpoint overrides must ride on top of the inherited environment.
+      env: {
+        ...process.env,
+        // Client appends /chat/completions; base keeps the real …/v1 shape.
+        NEBIUS_BASE_URL: "http://localhost:3099/v1",
+        NEBIUS_API_KEY: "e2e-mock-key",
+      },
     },
     {
       command:
@@ -33,6 +46,12 @@ export default defineConfig({
       url: "http://localhost:3001",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
+    },
+    {
+      command: "node tests/e2e/support/mock-nebius.ts",
+      url: "http://localhost:3099/health",
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
     },
   ],
 });

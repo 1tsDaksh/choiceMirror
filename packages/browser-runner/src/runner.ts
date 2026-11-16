@@ -9,6 +9,7 @@ import { isAllowlistedUrl } from "./allowlist";
 import { createPlaywrightOpenJourney } from "./driver";
 import { BlockedError } from "./errors";
 import { limits } from "./limits";
+import type { RawPageState } from "./observation";
 
 export type JourneyExecutionResult = {
   status: "completed" | "failed" | "timeout" | "blocked";
@@ -34,6 +35,22 @@ export type OpenJourney = () => Promise<{
   close(): Promise<void>;
 }>;
 
+/**
+ * Phase 3: the deterministic journey driver plus observation primitives the
+ * AI loop needs. Assignable to JourneyDriver everywhere deterministic code
+ * runs, so createPlaywrightOpenJourney can serve both modes.
+ */
+export type AiJourneyDriver = JourneyDriver & {
+  observe(): Promise<RawPageState>;
+  clickElement(targetId: string): Promise<void>;
+  completionState(): Promise<{ complete: boolean; detail?: string }>;
+};
+
+export type OpenAiJourney = () => Promise<{
+  driver: AiJourneyDriver;
+  close(): Promise<void>;
+}>;
+
 export type RunJourneyOptions = {
   comparisonId: string;
   plan: JourneyPlan;
@@ -45,14 +62,14 @@ export type RunJourneyOptions = {
   journeyTimeoutMs?: number;
 };
 
-class ExecutionTimeoutError extends Error {
+export class ExecutionTimeoutError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "TimeoutError";
   }
 }
 
-function withTimeout<T>(
+export function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
   label: string,
@@ -74,7 +91,7 @@ function withTimeout<T>(
   });
 }
 
-function classifyError(
+export function classifyError(
   error: unknown,
 ): "failed" | "timeout" | "blocked" {
   if (error instanceof BlockedError) {
@@ -86,7 +103,7 @@ function classifyError(
   return "failed";
 }
 
-function errorMessage(error: unknown): string {
+export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
