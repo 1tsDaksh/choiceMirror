@@ -3,6 +3,11 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
+  // Every spec drives the single-flight POST /api/comparisons lock, so
+  // parallel workers make cross-file runs collide (a UI run in one worker
+  // answers 429 to an API test in another). One worker keeps the suite
+  // deterministic without touching the Phase 1/2 specs.
+  workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI
