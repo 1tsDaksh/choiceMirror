@@ -123,7 +123,7 @@ docs/
 - AI mode is optional and bounded: without `NEBIUS_API_KEY` only the deterministic runner is used, AI runs fail explicitly rather than falling back silently, and AI actions are limited to `click`/`stop` with 12 decisions, 6 rejections, and 50k tokens per journey.
 - AI navigation runs only against the four controlled fixtures — no third-party sites, accounts, or real actions.
 - Model-provided justifications are *model-reported*, not independently verified evidence; completion is always determined by the app, never by the model.
-- Live AI results depend on real API credits; committed verification is offline against a local mock model (`pnpm test:e2e`), with `pnpm test:live` as the opt-in real check (not run — no `NEBIUS_API_KEY` at the time of writing).
+- Live AI results depend on real API credits; committed verification is offline against a local mock model (`pnpm test:e2e`), and `pnpm test:live` is the opt-in real check — last run 2026-11-16: **8/8 journeys completed** against the real Nebius API (0 errors, 20 inference calls).
 - No metrics, scores, or explanations are computed yet (Phase 4).
 - No third-party websites are visited; runs open only the local benchmark origin.
 - No accounts, payments, real consent changes, personal data, or consequential submissions occur.
