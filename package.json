@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:live": "playwright test --config playwright.live.config.ts"
   },
   "devDependencies": {
     "@choicemirror/agent": "workspace:^",
