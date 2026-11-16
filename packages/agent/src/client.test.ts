@@ -50,7 +50,7 @@ describe("createNebiusClient", () => {
     const body = JSON.parse(init.body);
     expect(body.model).toBe(cfg.model);
     expect(body.temperature).toBe(0);
-    expect(body.max_tokens).toBe(300);
+    expect(body.max_tokens).toBe(2048);
     expect("response_format" in body).toBe(false);
     expect(body.messages[0].role).toBe("system");
     expect(init.headers.authorization).toBe(`Bearer ${KEY}`);

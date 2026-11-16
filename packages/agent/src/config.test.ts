@@ -36,7 +36,7 @@ describe("nebiusConfigFromEnv", () => {
     expect(NEBIUS_MAX_RETRIES).toBe(2);
     expect(NEBIUS_RETRY_BACKOFF_MS).toBe(500);
     expect(NEBIUS_MAX_TOKENS_PER_JOURNEY).toBe(50_000);
-    expect(NEBIUS_MAX_OUTPUT_TOKENS).toBe(300);
+    expect(NEBIUS_MAX_OUTPUT_TOKENS).toBe(2048);
     expect(NEBIUS_TEMPERATURE).toBe(0);
   });
 

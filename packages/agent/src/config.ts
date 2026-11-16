@@ -5,7 +5,11 @@ export const NEBIUS_TIMEOUT_MS = 20_000;
 export const NEBIUS_MAX_RETRIES = 2;
 export const NEBIUS_RETRY_BACKOFF_MS = 500;
 export const NEBIUS_MAX_TOKENS_PER_JOURNEY = 50_000;
-export const NEBIUS_MAX_OUTPUT_TOKENS = 300;
+// Raised from the planned 300 on live evidence (2026-11-16): the model is a
+// reasoning model that emitted finish_reason=length with >1200 reasoning
+// tokens and empty content at 300, failing journeys as "invalid response
+// body". 2048 covers observed reasoning (237–1217 tokens) plus the action.
+export const NEBIUS_MAX_OUTPUT_TOKENS = 2048;
 export const NEBIUS_TEMPERATURE = 0;
 
 export type NebiusConfig = {
