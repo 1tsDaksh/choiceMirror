@@ -21,6 +21,7 @@ function freshAgent() {
   const config = nebiusConfig({
     apiKey: "e2e-mock-key",
     baseUrl: MOCK_BASE_URL,
+    retryBackoffMs: 0,
   });
   return {
     decider: createNebiusAgent(config),
@@ -43,13 +44,17 @@ async function recordedBodies(): Promise<unknown[]> {
   return (await response.json()) as unknown[];
 }
 
-test.beforeEach(async () => {
-  await resetMock();
-});
+type SweepEntry = {
+  label: string;
+  model: string;
+  expectedCount: number;
+  elapsedMs: number;
+  result: Awaited<ReturnType<typeof runAiJourney>>;
+};
 
-test("ai journeys complete all four scenarios from live observations alone", async () => {
-  test.setTimeout(240_000);
-
+/** Runs all 8 catalog journeys against the real driver + mock model. */
+async function sweepAllJourneys(): Promise<SweepEntry[]> {
+  const entries: SweepEntry[] = [];
   for (const scenario of scenarios) {
     for (const goal of scenario.goals) {
       const expected = scenario.expectedActions.find(
@@ -58,6 +63,7 @@ test("ai journeys complete all four scenarios from live observations alone", asy
       expect(expected, `${scenario.id}/${goal.id}`).toBeDefined();
 
       const { decider, aiMeta } = freshAgent();
+      const startedAt = Date.now();
       const result = await runAiJourney({
         comparisonId,
         goalId: goal.id,
@@ -70,39 +76,75 @@ test("ai journeys complete all four scenarios from live observations alone", asy
         decider,
         aiMeta,
       });
-
-      const label = `${scenario.id}/${goal.id}`;
-      expect(result.status, label).toBe("completed");
-      expect(result.error, label).toBeUndefined();
-      expect(result.actionCount, label).toBe(expected!.count);
-      expect(
-        result.events.some((event) => event.type === "navigate"),
-        label,
-      ).toBe(true);
-      expect(
-        result.events.some((event) => event.type === "goal-selected"),
-        label,
-      ).toBe(true);
-      expect(
-        result.events.some((event) => event.type === "complete"),
-        label,
-      ).toBe(true);
-
-      // Evidence metadata: honest usage, zero rejections, no model errors.
-      expect(result.ai.provider, label).toBe("nebius");
-      expect(result.ai.model, label).toBe(aiMeta.model);
-      expect(result.ai.promptVersion, label).toBe(PROMPT_VERSION);
-      expect(result.ai.inferenceCalls, label).toBeGreaterThan(0);
-      expect(result.ai.inputTokens, label).toBeGreaterThan(0);
-      expect(result.ai.outputTokens, label).toBeGreaterThan(0);
-      expect(result.ai.rejectedProposals, label).toBe(0);
-      expect(result.ai.modelErrors, label).toEqual([]);
-
-      expect(result.screenshots.length, label).toBeGreaterThan(0);
-      const first = result.screenshots[0]!.bytes;
-      expect([...first.subarray(0, 4)], label).toEqual(PNG_MAGIC);
+      entries.push({
+        label: `${scenario.id}/${goal.id}`,
+        model: aiMeta.model,
+        expectedCount: expected!.count,
+        elapsedMs: Date.now() - startedAt,
+        result,
+      });
     }
   }
+  return entries;
+}
+
+test.beforeEach(async () => {
+  await resetMock();
+});
+
+test("ai journeys complete all four scenarios from live observations alone", async () => {
+  test.setTimeout(240_000);
+
+  const entries = await sweepAllJourneys();
+
+  for (const { label, model, expectedCount, result } of entries) {
+    expect(result.status, label).toBe("completed");
+    expect(result.error, label).toBeUndefined();
+    expect(result.actionCount, label).toBe(expectedCount);
+
+    // Exact loop shape: navigate → goal-selected → N clicks → complete last.
+    expect(
+      result.events.map((event) => event.type),
+      label,
+    ).toEqual([
+      "navigate",
+      "goal-selected",
+      ...Array.from({ length: expectedCount }, () => "click"),
+      "complete",
+    ]);
+
+    const goalEvent = result.events[1]!;
+    expect(goalEvent.countsAsAction, label).toBe(false);
+    expect(goalEvent.ai?.validation, label).toBe("executed");
+    expect(goalEvent.ai?.proposed.reason, label).toBeTruthy();
+
+    for (const event of result.events.filter((entry) => entry.type === "click")) {
+      expect(event.countsAsAction, label).toBe(true);
+      expect(event.ai?.validation, label).toBe("executed");
+      expect(event.ai?.proposed.reason, label).toBeTruthy();
+    }
+
+    // Evidence metadata: honest usage, zero rejections, no model errors.
+    expect(result.ai.provider, label).toBe("nebius");
+    expect(result.ai.model, label).toBe(model);
+    expect(result.ai.promptVersion, label).toBe(PROMPT_VERSION);
+    expect(result.ai.inferenceCalls, label).toBe(expectedCount + 1);
+    expect(result.ai.inputTokens, label).toBeGreaterThan(0);
+    expect(result.ai.outputTokens, label).toBeGreaterThan(0);
+    expect(result.ai.rejectedProposals, label).toBe(0);
+    expect(result.ai.modelErrors, label).toEqual([]);
+
+    // Checkpoints: start + goal + each action + complete.
+    expect(result.screenshots.length, label).toBeGreaterThanOrEqual(
+      expectedCount + 3,
+    );
+  }
+});
+
+test("prompts never leak fixture plans or internal field names", async () => {
+  test.setTimeout(240_000);
+
+  await sweepAllJourneys();
 
   // The model must never receive fixture plans or internal field names —
   // only goal text and bounded observations derived from the live page.
@@ -111,6 +153,7 @@ test("ai journeys complete all four scenarios from live observations alone", asy
   const serialized = JSON.stringify(bodies);
   for (const body of bodies) {
     const request = JSON.stringify(body);
+    // Leak canaries: plan/fixture field names that must never travel.
     expect(request).not.toContain("expectedActionCount");
     expect(request).not.toContain("goalButtonName");
     // Positive controls: every prompt really carried goal + observation.
@@ -189,4 +232,21 @@ test("an off-benchmark origin is blocked before any model call", async () => {
   expect(result.ai.inferenceCalls).toBe(0);
   // No observation ever left the process: the mock saw zero requests.
   expect(await recordedBodies()).toHaveLength(0);
+});
+
+test("real-driver journeys finish promptly with screenshot evidence", async () => {
+  test.setTimeout(180_000);
+
+  const entries = await sweepAllJourneys();
+
+  for (const { label, expectedCount, elapsedMs, result } of entries) {
+    // Never hangs: each journey resolves well inside its own hard timeout.
+    expect(elapsedMs, label).toBeLessThan(30_000);
+    expect(result.status, label).toBe("completed");
+    expect(result.screenshots.length, label).toBeGreaterThanOrEqual(
+      expectedCount + 3,
+    );
+    const first = result.screenshots[0]!.bytes;
+    expect([...first.subarray(0, 4)], label).toEqual(PNG_MAGIC);
+  }
 });
