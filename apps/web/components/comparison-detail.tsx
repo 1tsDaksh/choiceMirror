@@ -105,6 +105,16 @@ export function ComparisonDetail({ initial }: ComparisonDetailProps) {
   }
 
   const appearance = statusAppearance[status];
+  // Absent mode = legacy Phase 2 record: displayed as deterministic.
+  const mode = detail.comparison.mode ?? "deterministic";
+  const aiModel = detail.journeys.find((journey) => journey.ai !== undefined)
+    ?.ai?.model;
+  const modeLabel =
+    mode === "ai"
+      ? aiModel !== undefined
+        ? `Mode: AI · ${aiModel}`
+        : "Mode: AI"
+      : "Mode: Deterministic";
   // Match stored journeys to goals by id, never by array position: storage
   // ordering is an implementation detail of the file-backed store.
   const goalJourneys = detail.comparison.goalIds.map((goalId) =>
@@ -121,6 +131,17 @@ export function ComparisonDetail({ initial }: ComparisonDetailProps) {
         <p className="text-sm text-secondary-text">
           Scenario <span className="font-mono">{scenarioId}</span> · seed{" "}
           <span className="font-mono">{seed}</span>
+        </p>
+        <p>
+          <span
+            className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
+              mode === "ai"
+                ? "bg-highlight/15 text-highlight"
+                : "bg-white/10 text-secondary-text"
+            }`}
+          >
+            {modeLabel}
+          </span>
         </p>
         <div
           role="status"
