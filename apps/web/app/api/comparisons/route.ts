@@ -5,6 +5,7 @@ import {
   type ComparisonRecord,
 } from "@choicemirror/contracts";
 
+import { isAiConfigured } from "../../../lib/ai-agent";
 import { getStore } from "../../../lib/comparison-store";
 import {
   releaseRun,
@@ -16,6 +17,16 @@ function invalidRequest(): Response {
   return Response.json(
     { error: "Invalid comparison request." },
     { status: 400 },
+  );
+}
+
+function aiNotConfigured(): Response {
+  return Response.json(
+    {
+      error:
+        "AI mode is not configured. Set NEBIUS_API_KEY in apps/web/.env.local.",
+    },
+    { status: 503 },
   );
 }
 
@@ -63,6 +74,14 @@ export async function POST(request: Request): Promise<Response> {
     return invalidRequest();
   }
 
+  // Explicit mode on every record; AI needs configured credentials and is
+  // refused up front (before any reservation) rather than silently falling
+  // back to deterministic execution.
+  const mode = parsed.data.mode ?? "deterministic";
+  if (mode === "ai" && !isAiConfigured()) {
+    return aiNotConfigured();
+  }
+
   const record: ComparisonRecord = {
     id: newComparisonId(),
     scenarioId: parsed.data.scenarioId,
@@ -70,6 +89,7 @@ export async function POST(request: Request): Promise<Response> {
     seed: "phase-2",
     status: "running",
     createdAt: new Date().toISOString(),
+    mode,
   };
 
   // Atomic single-flight reservation: a synchronous check-and-set before the

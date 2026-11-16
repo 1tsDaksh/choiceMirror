@@ -2,14 +2,19 @@ import {
   buildJourneyPlan,
   getScenario,
   newJourneyId,
+  type AiJourneySummary,
   type JourneyRecord,
 } from "@choicemirror/contracts";
 import {
   createPlaywrightOpenJourney,
   limits,
+  runAiJourney,
   runJourney,
+  type JourneyExecutionResult,
 } from "@choicemirror/browser-runner";
+import { PROMPT_VERSION } from "@choicemirror/agent";
 
+import { aiModelId, createAiAgent } from "./ai-agent";
 import { getStore } from "./comparison-store";
 
 let activeRunId: string | null = null;
@@ -104,19 +109,67 @@ export async function startComparisonRun(comparisonId: string): Promise<void> {
     }
 
     const origin = benchmarkOrigin();
-    for (const goalId of record.goalIds) {
-      const plan = buildJourneyPlan(scenario, goalId);
-      if (!plan) {
-        throw new Error(`No journey plan for goal "${goalId}".`);
-      }
+    const mode = record.mode ?? "deterministic";
 
-      const result = await runJourney({
-        comparisonId,
-        plan,
-        origin,
-        seed: record.seed,
-        openJourney: createPlaywrightOpenJourney({ origin }),
-      });
+    for (const goalId of record.goalIds) {
+      let result: JourneyExecutionResult;
+      let expectedActionCount: number;
+      let ai: AiJourneySummary | undefined;
+
+      if (mode === "ai") {
+        // One fresh agent per journey: per-journey budgets and counters
+        // never leak across comparisons. No configured agent means an
+        // explicit failure — never a silent deterministic fallback.
+        const agent = createAiAgent();
+        if (!agent) {
+          throw new Error("AI mode is not configured.");
+        }
+        const goal = scenario.goals.find(
+          (candidate) => candidate.id === goalId,
+        );
+        const expected = scenario.expectedActions.find(
+          (entry) => entry.goalId === goalId,
+        );
+        if (!goal || !expected) {
+          throw new Error(`No goal metadata for goal "${goalId}".`);
+        }
+
+        // The model receives only goal text + the live observation; the
+        // expected count is for the record/display and never reaches it.
+        const aiResult = await runAiJourney({
+          comparisonId,
+          goalId,
+          goalDescription: goal.description,
+          path: scenario.benchmarkPath,
+          origin,
+          seed: record.seed,
+          expectedActionCount: expected.count,
+          decider: agent,
+          aiMeta: {
+            provider: "nebius",
+            model: aiModelId(),
+            promptVersion: PROMPT_VERSION,
+          },
+          openJourney: createPlaywrightOpenJourney({ origin }),
+        });
+        result = aiResult;
+        ai = aiResult.ai;
+        expectedActionCount = expected.count;
+      } else {
+        const plan = buildJourneyPlan(scenario, goalId);
+        if (!plan) {
+          throw new Error(`No journey plan for goal "${goalId}".`);
+        }
+
+        result = await runJourney({
+          comparisonId,
+          plan,
+          origin,
+          seed: record.seed,
+          openJourney: createPlaywrightOpenJourney({ origin }),
+        });
+        expectedActionCount = plan.expectedActionCount;
+      }
 
       for (const screenshot of result.screenshots) {
         await store.saveScreenshot(
@@ -134,7 +187,7 @@ export async function startComparisonRun(comparisonId: string): Promise<void> {
         seed: record.seed,
         origin,
         viewport: limits.VIEWPORT,
-        expectedActionCount: plan.expectedActionCount,
+        expectedActionCount,
         actionCount: result.actionCount,
         startedAt: result.startedAt,
         completedAt: result.completedAt,
@@ -144,6 +197,8 @@ export async function startComparisonRun(comparisonId: string): Promise<void> {
           label: shot.label,
         })),
         ...(result.error !== undefined ? { error: result.error } : {}),
+        mode,
+        ...(ai !== undefined ? { ai } : {}),
       };
       await store.saveJourney(journey);
     }

@@ -23,6 +23,7 @@ vi.mock("../../../lib/run-comparison", async (importOriginal) => {
 
 vi.mock("@choicemirror/browser-runner", () => ({
   runJourney: vi.fn(),
+  runAiJourney: vi.fn(),
   createPlaywrightOpenJourney: vi.fn(() => vi.fn()),
   limits: {
     MAX_ACTIONS: 10,
@@ -69,6 +70,7 @@ describe("POST /api/comparisons", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     // The stubbed startComparisonRun never releases the reservation; free it
     // so tests stay independent.
     const held = activeComparisonId();
@@ -184,5 +186,63 @@ describe("POST /api/comparisons", () => {
     const retry = await POST(comparisonRequest(validBody));
     expect(retry.status).toBe(202);
     expect(mocks.startComparisonRun).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an unknown execution mode without starting work", async () => {
+    const response = await POST(
+      comparisonRequest({ ...validBody, mode: "bogus" }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Invalid comparison request.",
+    });
+    expect(mocks.saveComparison).not.toHaveBeenCalled();
+    expect(mocks.startComparisonRun).not.toHaveBeenCalled();
+  });
+
+  it("answers 503 for ai mode when the provider is not configured", async () => {
+    vi.stubEnv("NEBIUS_API_KEY", "");
+
+    const response = await POST(
+      comparisonRequest({ ...validBody, mode: "ai" }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: "AI mode is not configured. Set NEBIUS_API_KEY in apps/web/.env.local.",
+    });
+    // No record, no reservation: a rejected request must leak nothing.
+    expect(mocks.saveComparison).not.toHaveBeenCalled();
+    expect(mocks.startComparisonRun).not.toHaveBeenCalled();
+    expect(activeComparisonId()).toBeNull();
+  });
+
+  it("accepts ai mode when the key is configured and records the mode", async () => {
+    vi.stubEnv("NEBIUS_API_KEY", "test-key");
+
+    const response = await POST(
+      comparisonRequest({ ...validBody, mode: "ai" }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(202);
+    expect(mocks.saveComparison).toHaveBeenCalledWith(
+      expect.objectContaining({ id: body.comparisonId, mode: "ai" }),
+    );
+    expect(mocks.startComparisonRun).toHaveBeenCalledWith(body.comparisonId);
+  });
+
+  it("writes an explicit deterministic mode when the request omits mode", async () => {
+    const response = await POST(comparisonRequest(validBody));
+    const body = await response.json();
+
+    expect(response.status).toBe(202);
+    expect(mocks.saveComparison).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: body.comparisonId,
+        mode: "deterministic",
+      }),
+    );
   });
 });
