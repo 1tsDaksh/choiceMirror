@@ -134,18 +134,21 @@ test("ai run through the ui shows model-driven decisions and evidence", async ({
       ),
     ).toBeVisible();
 
-    // At least one event chip: proposed action, validation badge, reason.
+    // At least one event button: proposed action + validation badge in the step.
     const clickEvent = panel
       .locator("li", { hasText: /proposed: click · element-\d+/ })
       .first();
     await expect(clickEvent).toBeVisible();
-    await expect(clickEvent.getByText("executed", { exact: true })).toBeVisible();
+    const clickEventButton = clickEvent.locator("button");
+    await expect(clickEventButton).toContainText(
+      /proposed: click · element-\d+/,
+    );
     await expect(
-      clickEvent.locator("p.text-xs.text-secondary-text").first(),
-    ).not.toBeEmpty();
+      clickEventButton.getByText("executed", { exact: true }),
+    ).toBeVisible();
 
     // Evidence screenshots really render.
-    await expect(panel.getByText("Ordered events")).toBeVisible();
+    await expect(panel.getByText("Recorded steps")).toBeVisible();
     await expectLoadedScreenshots(panel);
   }
 });
@@ -175,6 +178,6 @@ test("deterministic runs stay explicitly labelled without ai sections", async ({
   expect(await page.getByText(/^proposed:/).count()).toBe(0);
 
   const goalAPanel = page.getByRole("region", { name: "Goal A journey" });
-  await expect(goalAPanel.getByText("Ordered events")).toBeVisible();
+  await expect(goalAPanel.getByText("Recorded steps")).toBeVisible();
   await expectLoadedScreenshots(goalAPanel);
 });

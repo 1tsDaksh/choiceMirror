@@ -150,11 +150,11 @@ test("run flow executes both consent-asymmetric goals and shows evidence", async
 
   const goalAPanel = page.getByRole("region", { name: "Goal A journey" });
   const goalBPanel = page.getByRole("region", { name: "Goal B journey" });
-  await expect(goalAPanel.getByText("1 / 1 actions")).toBeVisible();
-  await expect(goalBPanel.getByText("3 / 3 actions")).toBeVisible();
+  await expect(goalAPanel.getByText("1 recorded action")).toBeVisible();
+  await expect(goalBPanel.getByText("3 recorded actions")).toBeVisible();
 
   for (const panel of [goalAPanel, goalBPanel]) {
-    await expect(panel.getByText("Ordered events")).toBeVisible();
+    await expect(panel.getByText("Recorded steps")).toBeVisible();
     const firstImage = panel.locator("img").first();
     await expect(firstImage).toBeAttached();
     await firstImage.scrollIntoViewIfNeeded();

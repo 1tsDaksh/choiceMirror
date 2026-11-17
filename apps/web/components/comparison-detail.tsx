@@ -12,8 +12,9 @@ import type { JourneyMetrics } from "@choicemirror/metrics";
 import { ComparisonState } from "@/components/comparison-state";
 import { ComparisonSummary } from "@/components/comparison-summary";
 import { FindingCard } from "@/components/finding-card";
-import { JourneyPanel } from "@/components/journey-panel";
 import { MetricCard } from "@/components/metric-card";
+import { MirroredJourneys } from "@/components/mirrored-journeys";
+import type { EventSelection } from "@/lib/selection";
 
 type ComparisonDetailProps = {
   initial: ComparisonDetailData;
@@ -58,10 +59,21 @@ const POLL_INTERVAL_MS = 750;
 export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
   const [detail, setDetail] = useState<ComparisonDetailData>(initial);
   const [statusFailed, setStatusFailed] = useState(false);
+  const [selection, setSelection] = useState<EventSelection | null>(null);
   const requestSeqRef = useRef(0);
   const appliedSeqRef = useRef(0);
 
   const { id, status, error, completedAt } = detail.comparison;
+
+  // Evidence selections are only meaningful within one comparison: a new run
+  // (new id) must never keep a stale step highlighted. Adjusted during render
+  // (React's derived-state pattern) rather than in an effect to avoid a
+  // cascading render.
+  const [selectionForId, setSelectionForId] = useState(id);
+  if (selectionForId !== id) {
+    setSelectionForId(id);
+    setSelection(null);
+  }
 
   useEffect(() => {
     if (statusFailed || status !== "running") {
@@ -131,12 +143,6 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
         ? `Mode: AI · ${aiModel}`
         : "Mode: AI"
       : "Mode: Deterministic";
-  // Match stored journeys to goals by id, never by array position: storage
-  // ordering is an implementation detail of the file-backed store.
-  const goalJourneys = detail.comparison.goalIds.map((goalId) =>
-    detail.journeys.find((journey) => journey.goalId === goalId),
-  );
-
   const report = buildComparisonReport(detail);
   const finding = report.findings[0];
   const metrics = report.metrics;
@@ -216,10 +222,12 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
         ) : null}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <JourneyPanel journey={goalJourneys[0]} goalIndex={0} />
-        <JourneyPanel journey={goalJourneys[1]} goalIndex={1} />
-      </div>
+      <MirroredJourneys
+        detail={detail}
+        report={report}
+        selection={selection}
+        onSelect={setSelection}
+      />
     </div>
   );
 }
