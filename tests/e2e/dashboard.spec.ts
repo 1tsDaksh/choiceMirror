@@ -206,3 +206,121 @@ test("methodology panel explains counting, evidence classes and limits", async (
     await expect(panel).toContainText(text);
   }
 });
+
+// ---------------------------------------------------------------------------
+// Seeded state fixtures (written by tests/e2e/support/global-setup.ts).
+// ---------------------------------------------------------------------------
+
+test("a running comparison shows running state, pending tracks and an inconclusive finding", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto("/comparisons/cmp_5eed000000000001");
+
+  await expect(
+    page.getByRole("status").filter({ hasText: "Running" }),
+  ).toBeVisible();
+
+  for (const name of ["Goal A journey", "Goal B journey"] as const) {
+    const track = page.getByRole("region", { name });
+    await expect(track.getByText("Waiting", { exact: true })).toBeVisible();
+    await expect(
+      track.getByText("Waiting for this goal to run."),
+    ).toBeVisible();
+    await expect(track.getByText("Not available")).toBeVisible();
+  }
+
+  await expect(page.getByText("Inconclusive", { exact: true })).toBeVisible();
+
+  const differenceCard = page
+    .locator("div.rounded-2xl")
+    .filter({ hasText: "Action difference" });
+  await expect(differenceCard).toHaveCount(1);
+  await expect(differenceCard.getByText("—", { exact: true })).toBeVisible();
+  await expect(differenceCard.getByText("Not available")).toBeVisible();
+});
+
+test("a partial comparison never presents the failed journey as shorter", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto("/comparisons/cmp_5eed000000000002");
+
+  await expect(page.getByText("Inconclusive", { exact: true })).toBeVisible();
+  // The explanation names the recorded failure instead of a count claim.
+  await expect(page.getByText("did not complete (failed)")).toBeVisible();
+
+  const differenceCard = page
+    .locator("div.rounded-2xl")
+    .filter({ hasText: "Action difference" });
+  await expect(differenceCard.getByText("—", { exact: true })).toBeVisible();
+
+  const goalA = page.getByRole("region", { name: "Goal A journey" });
+  await expect(goalA.getByText("Completed", { exact: true })).toBeVisible();
+  await expect(goalA.getByText("1 recorded action")).toBeVisible();
+
+  const goalB = page.getByRole("region", { name: "Goal B journey" });
+  await expect(goalB.getByText("Failed", { exact: true })).toBeVisible();
+  await expect(goalB.getByText("Journey error")).toBeVisible();
+});
+
+test("a legacy phase 2 record renders as deterministic without ai sections", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto("/comparisons/cmp_5eed000000000003");
+
+  await expect(
+    page.getByText("Mode: Deterministic", { exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.getByText("AI decisions (model-reported)").count(),
+  ).toBe(0);
+  await expect(
+    page.getByRole("heading", {
+      name: "Leaving required 2 more actions than joining",
+    }),
+  ).toBeVisible();
+});
+
+test("a corrupt journey file is treated as missing evidence, not as zero", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto("/comparisons/cmp_5eed000000000004");
+
+  const goalA = page.getByRole("region", { name: "Goal A journey" });
+  await expect(goalA.getByText("1 recorded action")).toBeVisible();
+
+  const goalB = page.getByRole("region", { name: "Goal B journey" });
+  await expect(goalB.getByText("Waiting", { exact: true })).toBeVisible();
+  await expect(goalB.getByText("Not available")).toBeVisible();
+  expect(await goalB.getByText("0 recorded actions").count()).toBe(0);
+
+  await expect(page.getByText("Inconclusive", { exact: true })).toBeVisible();
+});
+
+test("a failing status poll shows a retryable error state", async ({ page }) => {
+  test.setTimeout(60_000);
+  const pollPattern = "**/api/comparisons/cmp_5eed000000000001";
+  await page.route(pollPattern, (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "seeded poll failure" }),
+    }),
+  );
+  await page.goto("/comparisons/cmp_5eed000000000001");
+
+  await expect(
+    page.getByText("Comparison status unavailable"),
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+
+  await page.unroute(pollPattern);
+  await page.getByRole("button", { name: "Try again" }).click();
+
+  await expect(
+    page.getByRole("status").filter({ hasText: "Running" }),
+  ).toBeVisible();
+});

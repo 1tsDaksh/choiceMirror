@@ -1,4 +1,10 @@
+import path from "node:path";
+
 import { defineConfig, devices } from "@playwright/test";
+
+// Fresh, seeded data directory for every run; mirrored in
+// tests/e2e/support/global-setup.ts, which populates it before tests.
+const E2E_DATA_DIR = path.join(process.cwd(), "test-results", "e2e-data");
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -13,6 +19,7 @@ export default defineConfig({
   reporter: process.env.CI
     ? [["list"], ["html", { open: "never" }]]
     : [["list"]],
+  globalSetup: "./tests/e2e/support/global-setup.ts",
   use: {
     baseURL: "http://localhost:3000",
     trace: "retain-on-failure",
@@ -35,6 +42,7 @@ export default defineConfig({
       // endpoint overrides must ride on top of the inherited environment.
       env: {
         ...process.env,
+        CHOICEMIRROR_DATA_DIR: E2E_DATA_DIR,
         // Client appends /chat/completions; base keeps the real …/v1 shape.
         NEBIUS_BASE_URL: "http://localhost:3099/v1",
         NEBIUS_API_KEY: "e2e-mock-key",

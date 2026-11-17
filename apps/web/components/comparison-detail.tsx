@@ -213,6 +213,12 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
         </div>
       </header>
 
+      {report.validation.valid ? null : (
+        <p className="rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm font-medium text-warning">
+          Stored evidence failed validation — findings are withheld.
+        </p>
+      )}
+
       {finding ? (
         <FindingCard
           finding={finding}
