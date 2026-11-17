@@ -13,6 +13,7 @@ import { ComparisonState } from "@/components/comparison-state";
 import { ComparisonSummary } from "@/components/comparison-summary";
 import { EvidenceInspector } from "@/components/evidence-inspector";
 import { FindingCard } from "@/components/finding-card";
+import { MethodologyPanel } from "@/components/methodology-panel";
 import { MetricCard } from "@/components/metric-card";
 import { MirroredJourneys } from "@/components/mirrored-journeys";
 import { selectEvent, type EventSelection } from "@/lib/selection";
@@ -269,6 +270,8 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
         onChange={setSelection}
         inspectorRef={inspectorRef}
       />
+
+      <MethodologyPanel />
     </div>
   );
 }

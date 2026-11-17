@@ -176,3 +176,33 @@ test("keyboard users can reach and operate the inspector", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(inspector.getByText("Step 1", { exact: true })).toBeVisible();
 });
+
+test("methodology panel explains counting, evidence classes and limits", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await runComparison(page);
+
+  const summary = page.getByText("How these measurements work", {
+    exact: true,
+  });
+  await summary.click();
+
+  const panel = page
+    .locator("details")
+    .filter({ hasText: "How these measurements work" });
+  // Opening the disclosure makes the six sections visible.
+  await expect(panel.locator("h3").first()).toBeVisible();
+
+  for (const text of [
+    "goal selection",
+    "Observed",
+    "Calculated",
+    "Interpreted",
+    "(max+1)/(min+1)",
+    "not proof of unlawful or intentional manipulation",
+    "interface friction",
+  ]) {
+    await expect(panel).toContainText(text);
+  }
+});
