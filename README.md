@@ -4,7 +4,7 @@
 
 ChoiceMirror is an AI-powered behavioural UX auditor for **SLAY HACKS 2026**. It compares opposing user journeys on the same interface—such as **join vs leave** or **accept vs reject**—and is designed to show measurable friction with inspectable browser evidence.
 
-> **Current status:** Phase 3 is implemented. The repository runs two local applications, four controlled benchmark fixtures, and a Playwright runner with two execution modes: the deterministic runner (default) executes both opposing goals of any scenario from equivalent starting conditions, and the optional **AI (Nebius)** mode lets a real model observe each page and choose the next validated action. Structured evidence — ordered events, action counts, screenshots, and model-reported decisions with token usage — is stored locally and viewable in the app. Metrics and explanations are **not implemented yet** (Phase 4).
+> **Current status:** Phase 4 is implemented. The repository runs two local applications, four controlled benchmark fixtures, and a Playwright runner with two execution modes: the deterministic runner (default) executes both opposing goals of any scenario from equivalent starting conditions, and the optional **AI (Nebius)** mode lets a real model observe each page and choose the next validated action. Structured evidence — ordered events, action counts, screenshots, and model-reported decisions with token usage — is stored locally. The comparison dashboard derives deterministic metrics and one evidence-linked finding from that stored evidence: a headline finding you can open to its supporting events and screenshots, mirrored Goal A/B tracks, an evidence inspector, and a methodology panel. Phase 5 (validation and submission) remains.
 
 ## What works now
 
@@ -13,10 +13,11 @@ ChoiceMirror is an AI-powered behavioural UX auditor for **SLAY HACKS 2026**. It
 - Deterministic Playwright runs: isolated browser contexts, fixed viewport and seed, domain allowlist, action/step/journey limits, and honest timeout/blocked/failed states with guaranteed cleanup.
 - Stored comparison evidence: ordered trace events, accurate action counts, and PNG screenshots served through Zod-validated APIs.
 - Live comparison status with per-goal evidence panels (status badge, action counts, ordered events, screenshots).
+- Comparison dashboard: deterministic metrics (action counts, difference, ratio) with one evidence-linked main finding, mirrored teal/violet Goal A/B tracks, a selectable evidence inspector showing real screenshots, a methodology panel, and honest running/partial/failed/legacy/corrupt-evidence states.
 - Optional **AI (Nebius)** mode: the model observes each page and proposes the next action, which passes Zod schema validation and a policy gate before it can reach the browser; AI runs show a `Mode: AI · <model>` badge, per-event proposed/validated action chips with model-reported justification, and inference-call/token counters. Unconfigured AI runs fail with the server's explicit reason — never a silent fallback.
 - Manual completion and deterministic reset for every goal.
 - Honest loading, empty, error, and unavailable states.
-- Automated tests covering contracts and APIs, all eight goal paths, keyboard activation, reset, 404s, external-request blocking, full paired browser runs, the AI loop against a local mock model (plan-leak canaries, controlled prompt injection, blocked origin), and AI-mode UI evidence.
+- Automated tests: **205 unit tests (30 files)** and **49 Playwright tests** covering contracts and APIs, the metrics/findings engine with evidence-reference validation, WCAG AA contrast, all eight goal paths, keyboard activation, reset, 404s, external-request blocking, full paired browser runs, the AI loop against a local mock model (plan-leak canaries, controlled prompt injection, blocked origin), AI-mode UI evidence, dashboard states and responsive layout, and three-run repeatability per goal path.
 
 ## Local setup
 
@@ -96,9 +97,22 @@ pnpm test:live
 
 1. Start both apps with `pnpm dev`.
 2. Open <http://localhost:3000>, select a scenario, choose the execution mode (**Deterministic** — the default — or **AI (Nebius)** when `NEBIUS_API_KEY` is configured), and press **Run comparison**.
-3. The app executes both opposing goals sequentially and shows live status; each goal panel lists its status, action counts, ordered events, and screenshots (plus the AI-decisions block in AI mode).
+3. The app executes both opposing goals sequentially and shows live status. When the run finishes, the comparison dashboard appears — see **How to read the dashboard** below.
 
 Evidence is stored under `data/` (gitignored) by default — override the location with `CHOICEMIRROR_DATA_DIR`. The runner may only navigate `BENCHMARK_ORIGIN` (default <http://localhost:3001>): every other request — subresources, page-initiated fetches, and each hop of a redirect chain — is aborted at the request layer before it leaves the browser. Only one comparison runs at a time; the start guard is an atomic in-process reservation, so concurrent starts yield exactly one `202` and one `429`.
+
+### How to read the dashboard
+
+1. **Header** — scenario name, status banner (Running / Completed / Failed …), execution mode, seed, and origin.
+2. **Main finding** — one deterministic, evidence-linked statement (for example `Leaving required 2 more actions than joining`) with its observed values, calculated values, interpretation, and limitations, plus an **Inspect supporting evidence** action that moves you to the supporting step in the inspector.
+3. **Metric cards** — Journey A/B actions, action difference, and action burden ratio, each with a unit and a definition. Unobservable values show `Not available`, never `0`. AI runs add a separate **Execution metadata** card (inference calls, tokens) — model activity, never a friction measure.
+4. **Mirrored tracks** — Goal A (teal) and Goal B (violet) side by side on desktop and stacked on mobile, each listing goal selection, recorded actions, completion, and screenshots; select any recorded step to inspect it.
+5. **Evidence inspector** — the selected step's real screenshot, timestamp, label, outcome, counted-as-action, model-reported justification (AI mode), and previous/next step navigation; reachable by keyboard with focus moved there from the finding.
+6. **Methodology** — the `How these measurements work` disclosure explains counting rules, observed vs calculated vs interpreted values, the ratio formula, and what the numbers do not show.
+
+**What `action_ratio` means:** when both journeys completed, `action_ratio = (max(actionsA, actionsB) + 1) / (min(actionsA, actionsB) + 1)` (PRD §9). The `+1` pseudocount keeps small counts stable: 3 actions against 1 gives `(3+1)/(1+1) = 2`. It is a descriptive action-burden ratio for this run only — not a manipulation score. If either journey failed, is still running, or has no recorded evidence, the difference and ratio show `Not available` and the finding is inconclusive.
+
+**Limitations:** every comparison is a single run against the controlled local benchmark. Counts reflect recorded browser actions only — backtracking, interruptions, and dead ends are not captured by the trace format and are never reported as zero. Action differences are descriptive measurements, not proof of unlawful or intentional manipulation. AI-mode justifications are model-reported, not independently verified.
 
 ## Repository layout
 
@@ -111,6 +125,7 @@ packages/
   browser-runner/  Deterministic and AI Playwright journey executors
   storage/         File-backed comparison evidence store
   agent/           Nebius adapter (config, prompt, client, agent)
+  metrics/         Pure metrics, findings, and evidence validation (no I/O)
 tests/
   e2e/             Two-server Playwright acceptance tests + local mock model
   live/            Opt-in live Nebius evaluation (pnpm test:live)
@@ -124,7 +139,8 @@ docs/
 - AI navigation runs only against the four controlled fixtures — no third-party sites, accounts, or real actions.
 - Model-provided justifications are *model-reported*, not independently verified evidence; completion is always determined by the app, never by the model.
 - Live AI results depend on real API credits; committed verification is offline against a local mock model (`pnpm test:e2e`), and `pnpm test:live` is the opt-in real check — last run 2026-11-16: **8/8 journeys completed** against the real Nebius API (0 errors, 20 inference calls).
-- No metrics, scores, or explanations are computed yet (Phase 4).
+- Metrics are descriptive and deterministic: one run per comparison, no confidence intervals; backtracking, interruptions, and human takeover are not captured by the trace format (reported as not captured, never as `0`), and no legal or manipulation verdicts are made.
+- Repeatability evidence covers the deterministic runner (3 runs × 2 goals × 4 fixtures, zero action-count variance); live-model repeat runs were not performed in Phase 4 — AI-path E2E coverage uses a local mock model and is never presented as real-model performance.
 - No third-party websites are visited; runs open only the local benchmark origin.
 - No accounts, payments, real consent changes, personal data, or consequential submissions occur.
 - The benchmark uses synthetic local state only.
@@ -133,7 +149,7 @@ docs/
 
 ## Planned delivery
 
-The detailed milestone plan is in [Phases.md](./docs/Phases.md). Phase 2 added deterministic Playwright execution and stored, inspectable evidence; Phase 3 added opt-in AI navigation with policy-gated model decisions and labelled AI evidence. Later phases add deterministic metrics, evidence-linked comparison views, and submission materials.
+The detailed milestone plan is in [Phases.md](./docs/Phases.md). Phase 2 added deterministic Playwright execution and stored, inspectable evidence; Phase 3 added opt-in AI navigation with policy-gated model decisions and labelled AI evidence; Phase 4 added the deterministic metrics engine, evidence-linked findings, and the mirrored dashboard with evidence inspector. Phase 5 covers validation, demo materials, and submission.
 
 ## Design and requirements
 

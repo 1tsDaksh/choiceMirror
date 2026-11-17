@@ -1,6 +1,6 @@
 # ChoiceMirror — Design System
 
-**Version:** 0.1 · **Status:** Proposed visual direction
+**Version:** 0.2 · **Status:** Visual direction; Phase 4 dashboard components shipped against it
 **Personality:** evidence-first, precise, calm, trustworthy and technically sophisticated.
 
 ## Brand concept
@@ -76,8 +76,24 @@ Color must *not* be the sole carrier of status. Pair with labels, icons and patt
 - `RunStatus`: pending/running/completed/partial/failed with text + icon.
 - `DifferenceIndicator`: avoids unsupported causal claims and includes both base values.
 
+### Shipped components (Phase 4)
+The original names above shipped as reusable components in `apps/web/components/`, reusing the existing design tokens unchanged (no new colours, spacing, or typography):
+- `ComparisonSummary` — scenario-name header: status banner, mode badge (`Mode: Deterministic` / `Mode: AI · <model>`), seed/origin line.
+- `FindingCard` — the main finding: title, explanation, observed/calculated/interpreted lists, limitations, quality chip, and the **Inspect supporting evidence** action (role `Main finding`).
+- `MetricCard` — number with unit and measurement definition; friction metrics and AI execution metadata are kept in separate cards.
+- `MirroredJourneys` — equal desktop columns for Goal A (teal) and Goal B (violet) that stack on mobile; labels and status badges accompany colour so it is never the sole carrier.
+- `JourneyTimeline` — selectable recorded steps per track: goal selection, counted actions, completion, screenshots, validation badges.
+- `EvidenceInspector` — screenshot plus step number, timestamp, action label, outcome, counted-as-action, model-reported justification, and a previous/next stepper with focus management.
+- `MethodologyPanel` — static `How these measurements work` disclosure: scope, counting rules, observed/calculated/interpreted, the ratio formula, limits, and AI-metadata-vs-friction.
+
+### Copy standards (introduced Phase 4)
+- **Verdict-language ban:** finding titles and explanations never assert manipulation, illegality, or intent ("dark pattern", "scam", "illegal"); the descriptive-not-proof disclaimer appears only in limitations.
+- **`Not available` over `0`:** unobservable metrics render as `Not available` / `—`, never a fabricated zero.
+- **Evidence classes stay separated:** observed (from stored events), calculated (documented formulas), interpreted (a reading of the evidence) are labelled distinctly.
+- **Model output is labelled:** justifications render as model-reported, and token/latency figures are execution metadata, not friction measures.
+
 ## Accessibility and motion
-- Aim for WCAG 2.2 AA contrast (verify tokens with contrast tests rather than assuming compliance).
+- Aim for WCAG 2.2 AA contrast — enforced since Phase 4 by `apps/web/lib/contrast.test.ts`, which pins 4.5:1 for body-text pairs, 4.5:1 for 15%-tinted badge pairs after compositing, and 3:1 for journey accents against the `globals.css` tokens.
 - All UI usable by keyboard, visible focus rings, semantic landmarks and labels.
 - At least 44x44px touch targets where feasible.
 - Respect `prefers-reduced-motion`; avoid auto-advancing evidence.
@@ -90,4 +106,4 @@ Frame 1: two symmetrical buttons; Frame 2: AI attempts each goal; Frame 3: split
 ## Avoid
 Overloaded analytics, cyberpunk neon, tiny typography, flashing warning badges, exaggerated AI animations, fake social proof or a design that hides unknown status.
 
-**Implementation condition:** these are design requirements, not claims about completed components.
+**Implementation condition:** these are design requirements. Phase 4 shipped the components listed above against them; anything new must follow the same tokens, copy standards, and accessibility checks.

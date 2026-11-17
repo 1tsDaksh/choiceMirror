@@ -39,12 +39,24 @@ Each phase produces a demonstrable vertical slice, tests, screenshots or other v
 **Exit gate evidence (2026-11-15):** `npx pnpm@12.18.0 install --frozen-lockfile` succeeds; strict typecheck passes workspace-wide; lint passes workspace-wide with zero warnings; 162 unit tests pass across 23 files; 28 Playwright tests pass (21 Phase 1–2 regression + 5 AI-loop + 2 AI-UI) covering all four scenarios × both goals completing from live observations alone with exact event order (navigate → goal-selected → N clicks → complete), `inferenceCalls = N+1`, screenshots ≥ N+3 per journey, plan-field leak canaries, the controlled prompt-injection negative control (bounded 3 inference calls, one rejected proposal, honest failure), blocked origin before any model call, and the UI AI run (`mode: "ai"`, model badge, AI-decisions evidence, rendered screenshots) plus the deterministic run staying explicitly labelled; production builds succeed for both apps; `npx pnpm@12.18.0 test:live` reports `1 skipped` (not run — no `NEBIUS_API_KEY`). **Review-pass evidence (2026-11-16, PR #4):** observation ids bound to exact DOM nodes (element-binding fixture + driver spec, red→green) and the response-body deadline covered by a stalled-body unit test; gates re-run — typecheck ✓, lint ✓ (zero warnings), **163 unit tests (23 files)**, **30 E2E tests (28 + 2 element-binding)**, both builds ✓; **live evaluation with real credentials — run 1 (300-token cap): 7/8 with one `finish_reason=length` truncation, diagnosed and cap raised to 2048 (D-022); run 2: 8/8 journeys completed, 0 errors, 20 inference calls, 11,084 input / 2,804 output tokens, latency 3.1–13.0s (median 3.6s), model `zai-org/GLM-5.3-Flash`.**
 
 ## Phase 4 — Compare, explain and polish (Nov 28–Dec 2)
-**Status:** Planned.
+**Status:** Complete (2026-11-17).
 - Implement deterministic metrics and evidence-linked findings.
 - Build visual side-by-side timeline and screenshot inspector.
 - Add accessible design system, clear uncertainty labels and replay/compare only as time permits.
 - Test at least three fresh runs on fair and asymmetric examples, log actual outcomes.
 **Exit gate:** Usable end-to-end demo supports a specific, defensible story about paired choice friction.
+**Exit gate evidence (2026-11-17):** `npx pnpm@12.18.0 install --frozen-lockfile` succeeds; strict typecheck passes workspace-wide; lint passes workspace-wide with zero warnings; **205 unit tests pass across 30 files** (metrics engine, finding copy pins, evidence validation and degradation, selection helpers, WCAG AA contrast); **49 Playwright tests pass** (30 Phase 1–3 regression + 15 dashboard + 4 repeatability); production builds succeed for both apps. The dashboard ships: scenario-name header with status banner and mode badge; a main finding card with observed/calculated/interpreted separated and an **Inspect supporting evidence** action that moves focus to the inspector; metric cards with units and definitions (friction metrics separated from AI execution metadata); teal/violet mirrored Goal A/B tracks in equal desktop columns that stack on mobile, labelled and badged so colour is never the sole carrier; an evidence inspector (real screenshot, step number, timestamp, label, outcome, counted-as-action, model-reported justification block, previous/next stepper, keyboard-operable with focus management); a static methodology panel; and honest states for running, partial/failed, legacy Phase 2 records, corrupt evidence (validation strip, findings withheld), and a failing status poll with retry. Repeatability (three fresh deterministic runs per goal path, printed verbatim by `tests/e2e/repeatability.spec.ts`):
+```text
+repeatability membership-balanced/join: 3 runs → statuses [completed×3], actions [1,1,1]
+repeatability membership-balanced/leave: 3 runs → statuses [completed×3], actions [1,1,1]
+repeatability membership-asymmetric/join: 3 runs → statuses [completed×3], actions [1,1,1]
+repeatability membership-asymmetric/leave: 3 runs → statuses [completed×3], actions [3,3,3]
+repeatability consent-balanced/accept: 3 runs → statuses [completed×3], actions [1,1,1]
+repeatability consent-balanced/reject: 3 runs → statuses [completed×3], actions [1,1,1]
+repeatability consent-asymmetric/accept: 3 runs → statuses [completed×3], actions [1,1,1]
+repeatability consent-asymmetric/reject: 3 runs → statuses [completed×3], actions [3,3,3]
+```
+Observed result: zero action-count variance across all 8 goal paths (24 runs, all `completed`); catalog `expectedActions` matched every run as validation only. **Honesty note:** these are deterministic-runner repeats. Live-model repeat runs were **not** performed in Phase 4 (no `NEBIUS_API_KEY` available in this environment); the AI path is covered only by mocked-model integration, which is never presented as real-model performance. The exit gate's "defensible story" is the asymmetric headline ("Leaving required 2 more actions than joining") backed by inspectable event/screenshot evidence and explicit limitations — a descriptive measurement, never a manipulation verdict.
 
 ## Phase 5 — Validate and submit (Dec 3–7)
 **Status:** Planned.
@@ -64,11 +76,11 @@ Each phase produces a demonstrable vertical slice, tests, screenshots or other v
 - **Nov 17:** Met early on 2026-11-14: both apps run, all four fixtures are navigable, and automated smoke tests pass.
 - **Nov 22:** Two fully traced deterministic browser runs — met early (2026-11-15): all four scenarios execute both goals with stored traces and screenshots.
 - **Nov 27:** At least one successful safe AI-driven paired run — met by mock on 2026-11-15: all 8 AI journeys (4 scenarios × 2 goals) completed through the real driver against the local mock model, and the UI AI run finished `mode: "ai"` with labelled evidence; **met by the live model on 2026-11-16: 8/8 journeys completed against the real Nebius API (D-022).**
-- **Dec 2:** Evidence-grounded result screen and repeatability report.
+- **Dec 2:** Evidence-grounded result screen and repeatability report — met early (2026-11-17): dashboard with evidence-linked finding, inspector and methodology panel; 8 repeatability lines with zero variance recorded above.
 - **Dec 6:** All presentation assets ready; submission tested.
 
 ## Current blocker register
-- Phase 1–2: no open implementation blockers after the verified exit-gate commands.
+- Phase 1–4: no open implementation blockers after the verified exit-gate commands.
 - Verify participant eligibility: event listing indicates students only, age of majority.
 - Verify competing rubric versions on event page vs rules.
 - ~~Live Nebius credentials~~ **Resolved (2026-11-16):** the live evaluation ran with real credentials — 8/8 journeys completed (D-022). A browser-worker host for any hosted demo is still unselected.
