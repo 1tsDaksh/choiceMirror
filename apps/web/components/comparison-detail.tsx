@@ -2,13 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { ComparisonDetail as ComparisonDetailData } from "@choicemirror/contracts";
+import type {
+  ComparisonDetail as ComparisonDetailData,
+  Scenario,
+} from "@choicemirror/contracts";
+import { buildComparisonReport, isCountedAction } from "@choicemirror/metrics";
+import type { JourneyMetrics } from "@choicemirror/metrics";
 
 import { ComparisonState } from "@/components/comparison-state";
-import { JourneyPanel } from "@/components/journey-panel";
+import { ComparisonSummary } from "@/components/comparison-summary";
+import { EvidenceInspector } from "@/components/evidence-inspector";
+import { FindingCard } from "@/components/finding-card";
+import { MethodologyPanel } from "@/components/methodology-panel";
+import { MetricCard } from "@/components/metric-card";
+import { MirroredJourneys } from "@/components/mirrored-journeys";
+import { goalLetterByJourneyId } from "@/lib/evidence-chips";
+import { selectEvent, type EventSelection } from "@/lib/selection";
 
 type ComparisonDetailProps = {
   initial: ComparisonDetailData;
+  scenario: Scenario;
 };
 
 type ComparisonStatus = ComparisonDetailData["comparison"]["status"];
@@ -36,16 +49,35 @@ const statusAppearance: Record<
   },
 };
 
+const outcomeLabels: Record<JourneyMetrics["outcome"], string> = {
+  completed: "Completed",
+  failed: "Failed",
+  blocked: "Blocked",
+  "timed-out": "Timed out",
+  pending: "Pending",
+};
+
 const POLL_INTERVAL_MS = 750;
 
-export function ComparisonDetail({ initial }: ComparisonDetailProps) {
+export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
   const [detail, setDetail] = useState<ComparisonDetailData>(initial);
   const [statusFailed, setStatusFailed] = useState(false);
+  const [selection, setSelection] = useState<EventSelection | null>(null);
+  const inspectorRef = useRef<HTMLHeadingElement>(null);
   const requestSeqRef = useRef(0);
   const appliedSeqRef = useRef(0);
 
-  const { id, status, scenarioId, seed, error, completedAt } =
-    detail.comparison;
+  const { id, status, error, completedAt } = detail.comparison;
+
+  // Evidence selections are only meaningful within one comparison: a new run
+  // (new id) must never keep a stale step highlighted. Adjusted during render
+  // (React's derived-state pattern) rather than in an effect to avoid a
+  // cascading render.
+  const [selectionForId, setSelectionForId] = useState(id);
+  if (selectionForId !== id) {
+    setSelectionForId(id);
+    setSelection(null);
+  }
 
   useEffect(() => {
     if (statusFailed || status !== "running") {
@@ -115,41 +147,84 @@ export function ComparisonDetail({ initial }: ComparisonDetailProps) {
         ? `Mode: AI · ${aiModel}`
         : "Mode: AI"
       : "Mode: Deterministic";
-  // Match stored journeys to goals by id, never by array position: storage
-  // ordering is an implementation detail of the file-backed store.
-  const goalJourneys = detail.comparison.goalIds.map((goalId) =>
-    detail.journeys.find((journey) => journey.goalId === goalId),
+  const report = buildComparisonReport(detail);
+  const finding = report.findings[0];
+  const metrics = report.metrics;
+  const [slotA, slotB] = metrics.journeys;
+  const hasAi = slotA.ai !== null || slotB.ai !== null;
+
+  // The completed banner may only claim completeness when both journeys
+  // finished and every stored screenshot resolves — a failed or missing
+  // journey means the evidence below is incomplete.
+  const storedEvidenceComplete =
+    slotA.outcome === "completed" &&
+    slotB.outcome === "completed" &&
+    slotA.evidence.complete &&
+    slotB.evidence.complete;
+  const bannerMessage =
+    status === "completed" && !storedEvidenceComplete
+      ? "This run finished, but the stored evidence below is incomplete — see the findings and limitations."
+      : appearance.message;
+
+  // Evidence chips resolve their goal by journey id via comparison.goalIds,
+  // never by position in the evidence array.
+  const goalLetters = goalLetterByJourneyId(
+    detail.comparison.goalIds,
+    detail.journeys,
   );
+  const inferenceCalls =
+    (slotA.ai?.inferenceCalls ?? 0) + (slotB.ai?.inferenceCalls ?? 0);
+  const inputTokens =
+    (slotA.ai?.inputTokens ?? 0) + (slotB.ai?.inputTokens ?? 0);
+  const outputTokens =
+    (slotA.ai?.outputTokens ?? 0) + (slotB.ai?.outputTokens ?? 0);
+  const rejectedProposals =
+    (slotA.ai?.rejectedProposals ?? 0) + (slotB.ai?.rejectedProposals ?? 0);
+
+  // "Inspect supporting evidence" jumps to the first counted action of the
+  // heavier side (fallback: first counted action in goal order), then moves
+  // focus to the inspector heading.
+  const handleInspectEvidence = () => {
+    const goalJourneys = detail.comparison.goalIds.map((goalId) =>
+      detail.journeys.find((journey) => journey.goalId === goalId),
+    );
+    const order: readonly (0 | 1)[] =
+      metrics.heavierJourney === "b" ? ([1, 0] as const) : ([0, 1] as const);
+    let picked: EventSelection | null = null;
+    for (const index of order) {
+      const journey = goalJourneys[index];
+      if (!journey) {
+        continue;
+      }
+      const action = [...journey.events]
+        .sort((left, right) => left.stepNo - right.stepNo)
+        .find(isCountedAction);
+      if (action) {
+        picked = selectEvent(index, action);
+        break;
+      }
+    }
+    setSelection(picked);
+    requestAnimationFrame(() => inspectorRef.current?.focus());
+  };
 
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        <p className="font-mono text-xs uppercase tracking-widest text-journey-a">
-          Comparison evidence
-        </p>
-        <h1 className="text-3xl font-bold">Run {id}</h1>
-        <p className="text-sm text-secondary-text">
-          Scenario <span className="font-mono">{scenarioId}</span> · seed{" "}
-          <span className="font-mono">{seed}</span>
-        </p>
-        <p>
-          <span
-            className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
-              mode === "ai"
-                ? "bg-highlight/15 text-highlight"
-                : "bg-white/10 text-secondary-text"
-            }`}
-          >
-            {modeLabel}
-          </span>
-        </p>
+        <ComparisonSummary
+          scenario={scenario}
+          comparison={detail.comparison}
+          report={report}
+          modeLabel={modeLabel}
+          modeIsAi={mode === "ai"}
+        />
         <div
           role="status"
           aria-live="polite"
           className={`rounded-xl border p-4 ${appearance.className}`}
         >
           <p className="font-semibold">{appearance.label}</p>
-          <p className="mt-1 text-sm">{appearance.message}</p>
+          <p className="mt-1 text-sm">{bannerMessage}</p>
           {error ? <p className="mt-1 text-sm">{error}</p> : null}
           {completedAt ? (
             <p className="mt-1 text-xs text-secondary-text">
@@ -159,10 +234,72 @@ export function ComparisonDetail({ initial }: ComparisonDetailProps) {
         </div>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <JourneyPanel journey={goalJourneys[0]} goalIndex={0} />
-        <JourneyPanel journey={goalJourneys[1]} goalIndex={1} />
+      {report.validation.valid ? null : (
+        <p className="rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm font-medium text-warning">
+          Stored evidence failed validation — findings are withheld.
+        </p>
+      )}
+
+      {finding ? (
+        <FindingCard
+          finding={finding}
+          goalLetters={goalLetters}
+          onInspectEvidence={handleInspectEvidence}
+        />
+      ) : null}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          label="Journey A actions"
+          value={slotA.actionCount?.toString() ?? "—"}
+          unit="recorded actions"
+          definition="Counted successful click events in the trace; goal selection is excluded."
+          unavailable={slotA.actionCount === null}
+        />
+        <MetricCard
+          label="Journey B actions"
+          value={slotB.actionCount?.toString() ?? "—"}
+          unit="recorded actions"
+          definition="Counted successful click events in the trace; goal selection is excluded."
+          unavailable={slotB.actionCount === null}
+        />
+        <MetricCard
+          label="Action difference"
+          value={metrics.actionDifference?.toString() ?? "—"}
+          unit="actions"
+          definition="Absolute difference between the two completed journeys; unavailable unless both completed under matching conditions."
+          unavailable={metrics.actionDifference === null}
+        />
+        <MetricCard
+          label="Completion outcomes"
+          value={`${outcomeLabels[slotA.outcome]} / ${outcomeLabels[slotB.outcome]}`}
+          definition="Actual stored journey outcomes; a completed comparison can still contain a failed journey."
+        />
+        {hasAi ? (
+          <MetricCard
+            label="Execution metadata"
+            value={`${inferenceCalls} inference calls`}
+            unit={`${inputTokens} input / ${outputTokens} output tokens · ${rejectedProposals} rejected${aiModel !== undefined ? ` · ${aiModel}` : ""}`}
+            definition="Model activity recorded for this run — execution cost, not a measure of interface friction."
+          />
+        ) : null}
       </div>
+
+      <MirroredJourneys
+        detail={detail}
+        report={report}
+        selection={selection}
+        onSelect={setSelection}
+      />
+
+      <EvidenceInspector
+        detail={detail}
+        selection={selection}
+        onChange={setSelection}
+        inspectorRef={inspectorRef}
+      />
+
+      <MethodologyPanel />
     </div>
   );
 }

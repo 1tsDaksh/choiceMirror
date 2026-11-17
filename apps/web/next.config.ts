@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     "@choicemirror/contracts",
     "@choicemirror/browser-runner",
+    "@choicemirror/metrics",
     "@choicemirror/storage",
   ],
 };
