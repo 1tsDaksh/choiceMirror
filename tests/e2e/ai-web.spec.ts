@@ -121,6 +121,17 @@ test("ai run through the ui shows model-driven decisions and evidence", async ({
   // Header badge: "Mode: AI · <model>" — model comes from the run's evidence.
   await expect(page.getByText(/^Mode: AI · .+/)).toBeVisible();
 
+  // Execution metadata card: model activity, labelled as metadata (never friction).
+  const executionCard = page
+    .locator("div.rounded-2xl")
+    .filter({ hasText: "Execution metadata" });
+  await expect(executionCard).toHaveCount(1);
+  await expect(executionCard).toContainText("inference calls");
+  const modeText = await page.getByText(/^Mode: AI · .+/).innerText();
+  const modelName = modeText.replace(/^Mode: AI · /, "").trim();
+  expect(modelName.length).toBeGreaterThan(0);
+  await expect(executionCard).toContainText(modelName);
+
   const goalAPanel = page.getByRole("region", { name: "Goal A journey" });
   const goalBPanel = page.getByRole("region", { name: "Goal B journey" });
 

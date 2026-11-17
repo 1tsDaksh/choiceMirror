@@ -3,16 +3,17 @@ import { expect, test, type Page } from "@playwright/test";
 const COMPARISON_URL = /\/comparisons\/(cmp_[a-f0-9]{16})/;
 
 /**
- * Runs the consent-asymmetric scenario from the launcher (deterministic mode
- * is the default) and waits for the detail page to report Completed. The
+ * Runs the given scenario from the launcher (deterministic mode is the
+ * default) and waits for the detail page to report Completed. The
  * single-flight lock on POST /api/comparisons is shared across parallel
  * spec files, so a busy response is waited out and retried.
  */
-async function runComparison(page: Page): Promise<void> {
+async function runComparison(
+  page: Page,
+  scenarioName: RegExp = /Accept vs reject — asymmetric/,
+): Promise<void> {
   await page.goto("/");
-  const scenarioRadio = page.getByRole("radio", {
-    name: /Accept vs reject — asymmetric/,
-  });
+  const scenarioRadio = page.getByRole("radio", { name: scenarioName });
   await expect(scenarioRadio).toBeVisible();
   await scenarioRadio.check({ force: true });
 
@@ -323,4 +324,140 @@ test("a failing status poll shows a retryable error state", async ({ page }) => 
   await expect(
     page.getByRole("status").filter({ hasText: "Running" }),
   ).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// Results and responsive layout.
+// ---------------------------------------------------------------------------
+
+function card(page: Page, label: string) {
+  return page.locator("div.rounded-2xl").filter({ hasText: label });
+}
+
+test("a balanced run reports equal recorded action burden", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await runComparison(page, /Accept vs reject — balanced/);
+
+  await expect(page.getByText("Balanced", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Equal recorded action burden" }),
+  ).toBeVisible();
+
+  await expect(card(page, "Journey A actions")).toHaveCount(1);
+  await expect(
+    card(page, "Journey A actions").getByText("1", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    card(page, "Journey B actions").getByText("1", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    card(page, "Action difference").getByText("0", { exact: true }),
+  ).toBeVisible();
+});
+
+test("an asymmetric run headlines the action difference with A/B correctly assigned", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await runComparison(page, /Join vs leave — asymmetric/);
+
+  await expect(
+    page.getByRole("heading", {
+      name: "Leaving required 2 more actions than joining",
+    }),
+  ).toBeVisible();
+
+  const goalA = page.getByRole("region", { name: "Goal A journey" });
+  await expect(goalA.getByRole("heading", { name: "join" })).toBeVisible();
+  await expect(goalA.getByText("1 recorded action")).toBeVisible();
+
+  const goalB = page.getByRole("region", { name: "Goal B journey" });
+  await expect(goalB.getByRole("heading", { name: "leave" })).toBeVisible();
+  await expect(goalB.getByText("3 recorded actions")).toBeVisible();
+
+  await expect(
+    card(page, "Action difference").getByText("2", { exact: true }),
+  ).toBeVisible();
+
+  const finding = page.getByRole("region", { name: "Main finding" });
+  await expect(finding.getByText("(3+1)/(1+1) = 2")).toBeVisible();
+});
+
+test("the main finding button jumps to its supporting evidence", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await runComparison(page, /Join vs leave — asymmetric/);
+
+  await page
+    .getByRole("button", { name: "Inspect supporting evidence" })
+    .click();
+
+  const inspector = page.getByRole("region", { name: "Evidence inspector" });
+  await expect(
+    inspector.getByRole("heading", { name: "Evidence inspector" }),
+  ).toBeFocused();
+  // The heavier side is Goal B (leave); its first counted action is step 2.
+  await expect(
+    inspector.getByText("Goal B · leave", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    inspector.getByText("Counted as an action: Yes"),
+  ).toBeVisible();
+});
+
+test("screenshots load in the track and the inspector", async ({ page }) => {
+  test.setTimeout(90_000);
+  await runComparison(page, /Join vs leave — asymmetric/);
+
+  const goalB = page.getByRole("region", { name: "Goal B journey" });
+  const trackImages = goalB.locator("img");
+  const imageCount = await trackImages.count();
+  expect(imageCount).toBeGreaterThan(0);
+  for (let index = 0; index < imageCount; index++) {
+    const image = trackImages.nth(index);
+    await image.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() =>
+        image.evaluate((element) => (element as HTMLImageElement).naturalWidth),
+      )
+      .toBeGreaterThan(0);
+  }
+
+  await goalB.getByRole("button", { name: /step 2/ }).click();
+  const inspectorImage = page
+    .getByRole("region", { name: "Evidence inspector" })
+    .locator("img")
+    .first();
+  await expect(inspectorImage).toBeAttached();
+  await inspectorImage.scrollIntoViewIfNeeded();
+  await expect
+    .poll(() =>
+      inspectorImage.evaluate(
+        (element) => (element as HTMLImageElement).naturalWidth,
+      ),
+    )
+    .toBeGreaterThan(0);
+});
+
+test("the dashboard stacks into a single column on mobile", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await runComparison(page, /Join vs leave — asymmetric/);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const goalA = page.getByRole("region", { name: "Goal A journey" });
+  const goalB = page.getByRole("region", { name: "Goal B journey" });
+  await expect(goalA).toBeVisible();
+  await expect(goalB).toBeVisible();
+
+  const boxA = await goalA.boundingBox();
+  const boxB = await goalB.boundingBox();
+  expect(boxA).not.toBeNull();
+  expect(boxB).not.toBeNull();
+  // Stacked: Goal B starts below where Goal A ends, not beside it.
+  expect(boxB!.y).toBeGreaterThanOrEqual(boxA!.y + boxA!.height);
 });
