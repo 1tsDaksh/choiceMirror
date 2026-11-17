@@ -27,3 +27,24 @@ export const waitingBadge = {
 export function outcomeClass(outcome: "success" | "failure"): string {
   return outcome === "success" ? "text-success" : "text-error";
 }
+
+export function formatTokenCount(count: number): string {
+  if (count < 1_000) {
+    return String(count);
+  }
+  const thousands = count / 1_000;
+  const rounded =
+    thousands >= 10 ? Math.round(thousands) : Math.round(thousands * 10) / 10;
+  return `${rounded}k`;
+}
+
+export function usageLine(ai: AiEvent): string | null {
+  const parts: string[] = [];
+  if (ai.usage !== undefined) {
+    parts.push(`${formatTokenCount(ai.usage.totalTokens)} tok`);
+  }
+  if (ai.latencyMs !== undefined) {
+    parts.push(`${ai.latencyMs} ms`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}

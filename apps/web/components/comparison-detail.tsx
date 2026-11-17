@@ -11,10 +11,11 @@ import type { JourneyMetrics } from "@choicemirror/metrics";
 
 import { ComparisonState } from "@/components/comparison-state";
 import { ComparisonSummary } from "@/components/comparison-summary";
+import { EvidenceInspector } from "@/components/evidence-inspector";
 import { FindingCard } from "@/components/finding-card";
 import { MetricCard } from "@/components/metric-card";
 import { MirroredJourneys } from "@/components/mirrored-journeys";
-import type { EventSelection } from "@/lib/selection";
+import { selectEvent, type EventSelection } from "@/lib/selection";
 
 type ComparisonDetailProps = {
   initial: ComparisonDetailData;
@@ -60,6 +61,7 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
   const [detail, setDetail] = useState<ComparisonDetailData>(initial);
   const [statusFailed, setStatusFailed] = useState(false);
   const [selection, setSelection] = useState<EventSelection | null>(null);
+  const inspectorRef = useRef<HTMLHeadingElement>(null);
   const requestSeqRef = useRef(0);
   const appliedSeqRef = useRef(0);
 
@@ -157,6 +159,33 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
   const rejectedProposals =
     (slotA.ai?.rejectedProposals ?? 0) + (slotB.ai?.rejectedProposals ?? 0);
 
+  // "Inspect supporting evidence" jumps to the first counted action of the
+  // heavier side (fallback: first counted action in goal order), then moves
+  // focus to the inspector heading.
+  const handleInspectEvidence = () => {
+    const goalJourneys = detail.comparison.goalIds.map((goalId) =>
+      detail.journeys.find((journey) => journey.goalId === goalId),
+    );
+    const order: readonly (0 | 1)[] =
+      metrics.heavierJourney === "b" ? ([1, 0] as const) : ([0, 1] as const);
+    let picked: EventSelection | null = null;
+    for (const index of order) {
+      const journey = goalJourneys[index];
+      if (!journey) {
+        continue;
+      }
+      const action = [...journey.events]
+        .sort((left, right) => left.stepNo - right.stepNo)
+        .find((event) => event.countsAsAction);
+      if (action) {
+        picked = selectEvent(index, action);
+        break;
+      }
+    }
+    setSelection(picked);
+    requestAnimationFrame(() => inspectorRef.current?.focus());
+  };
+
   return (
     <div className="space-y-6">
       <header className="space-y-3">
@@ -183,7 +212,12 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
         </div>
       </header>
 
-      {finding ? <FindingCard finding={finding} /> : null}
+      {finding ? (
+        <FindingCard
+          finding={finding}
+          onInspectEvidence={handleInspectEvidence}
+        />
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
@@ -227,6 +261,13 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
         report={report}
         selection={selection}
         onSelect={setSelection}
+      />
+
+      <EvidenceInspector
+        detail={detail}
+        selection={selection}
+        onChange={setSelection}
+        inspectorRef={inspectorRef}
       />
     </div>
   );
