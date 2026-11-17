@@ -53,9 +53,11 @@ export function MethodologyPanel() {
             Observed values come directly from stored evidence: event counts,
             outcomes, timestamps, and screenshots. Calculated values are
             derived from those observations with the documented formulas —
-            the action difference and the action ratio. Interpreted statements
-            explain what the numbers suggest; they are a reading of the
-            evidence, never new measurements.
+            the action difference and the action ratio — and appear only when
+            both journeys completed under matching conditions; otherwise the
+            comparison is inconclusive. Interpreted statements explain what
+            the numbers suggest; they are a reading of the evidence, never
+            new measurements.
           </p>
         </MethodologySection>
 

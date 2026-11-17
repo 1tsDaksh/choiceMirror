@@ -299,6 +299,89 @@ test("a corrupt journey file is treated as missing evidence, not as zero", async
   expect(await goalB.getByText("0 recorded actions").count()).toBe(0);
 
   await expect(page.getByText("Inconclusive", { exact: true })).toBeVisible();
+
+  // The completed banner must not claim completeness while goal B has no
+  // stored evidence at all.
+  const banner = page.getByRole("status").filter({ hasText: "Completed" });
+  await expect(banner).toContainText("stored evidence below is incomplete");
+  await expect(banner).not.toContainText(
+    "the stored evidence below is complete",
+  );
+});
+
+test("mismatched conditions withhold the action difference but keep raw counts", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto("/comparisons/cmp_5eed000000000005");
+
+  await expect(page.getByText("Inconclusive", { exact: true })).toBeVisible();
+  await expect(page.getByText("Seeds differ between journeys")).toBeVisible();
+
+  // Both journeys completed with counts, but differing seeds mean no
+  // comparative number may be shown — never a fake "2".
+  const differenceCard = page
+    .locator("div.rounded-2xl")
+    .filter({ hasText: "Action difference" });
+  await expect(differenceCard).toHaveCount(1);
+  await expect(differenceCard.getByText("—", { exact: true })).toBeVisible();
+  await expect(differenceCard.getByText("Not available")).toBeVisible();
+  expect(await differenceCard.getByText("2", { exact: true }).count()).toBe(0);
+
+  // Per-journey raw counts stay on their own cards.
+  const journeyACard = page
+    .locator("div.rounded-2xl")
+    .filter({ hasText: "Journey A actions" });
+  const journeyBCard = page
+    .locator("div.rounded-2xl")
+    .filter({ hasText: "Journey B actions" });
+  await expect(journeyACard.getByText("1", { exact: true })).toBeVisible();
+  await expect(journeyBCard.getByText("3", { exact: true })).toBeVisible();
+});
+
+test("a degraded report withholds comparative numbers from a parseable detail", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto("/comparisons/cmp_5eed000000000007");
+
+  await expect(
+    page.getByText("Stored evidence failed validation — findings are withheld."),
+  ).toBeVisible();
+  await expect(page.getByText("Evidence could not be validated")).toBeVisible();
+
+  // Raw counts survive degradation; the difference does not.
+  const journeyACard = page
+    .locator("div.rounded-2xl")
+    .filter({ hasText: "Journey A actions" });
+  await expect(journeyACard.getByText("1", { exact: true })).toBeVisible();
+
+  const differenceCard = page
+    .locator("div.rounded-2xl")
+    .filter({ hasText: "Action difference" });
+  await expect(differenceCard).toHaveCount(1);
+  await expect(differenceCard.getByText("—", { exact: true })).toBeVisible();
+  await expect(differenceCard.getByText("Not available")).toBeVisible();
+  expect(await differenceCard.getByText("2", { exact: true }).count()).toBe(0);
+});
+
+test("an evidence chip names the goal by journey id, not by array position", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto("/comparisons/cmp_5eed000000000006");
+
+  // Goal A completed with zero counted actions, goal B with one — so the
+  // finding's only evidence entry is goal B's and the chip must say Goal B.
+  await expect(
+    page.getByRole("heading", {
+      name: "Leaving required 1 more action than joining",
+    }),
+  ).toBeVisible();
+
+  const finding = page.getByRole("region", { name: "Main finding" });
+  await expect(finding.getByText("Goal B · steps 2")).toBeVisible();
+  expect(await finding.getByText(/^Goal A · steps/).count()).toBe(0);
 });
 
 test("a failing status poll shows a retryable error state", async ({ page }) => {

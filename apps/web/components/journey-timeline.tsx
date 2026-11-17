@@ -1,5 +1,5 @@
 import type { JourneyRecord, TraceEvent } from "@choicemirror/contracts";
-import type { JourneyMetrics } from "@choicemirror/metrics";
+import { isCountedAction, type JourneyMetrics } from "@choicemirror/metrics";
 
 import {
   outcomeClass,
@@ -150,12 +150,12 @@ export function JourneyTimeline({
                     <span className="flex items-center gap-2 text-xs">
                       <span
                         className={`rounded-full px-2 py-0.5 font-semibold ${
-                          event.countsAsAction
+                          isCountedAction(event)
                             ? "bg-highlight/15 text-highlight"
                             : "bg-white/10 text-secondary-text"
                         }`}
                       >
-                        {event.countsAsAction ? "action" : "step"}
+                        {isCountedAction(event) ? "action" : "step"}
                       </span>
                       <span className={outcomeClass(event.outcome)}>
                         {event.outcome}

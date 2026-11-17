@@ -1,5 +1,6 @@
 import type { JourneyRecord } from "@choicemirror/contracts";
 
+import { countedActionEvents } from "./journey-metrics";
 import type {
   ComparisonMetrics,
   Finding,
@@ -94,14 +95,13 @@ function observedLine(index: 0 | 1, slot: JourneyMetrics): string {
 }
 
 /**
- * Cites the counted-action events of one recorded journey. Only events that
- * exist in the supplied record are referenced; a journey with no counted
- * actions contributes no evidence entry.
+ * Cites the counted-action events of one recorded journey, using the same
+ * counting rule as the metrics. Only events that exist in the supplied
+ * record are referenced; a journey with no counted actions contributes no
+ * evidence entry.
  */
 function citeJourney(journey: JourneyRecord): FindingEvidence | null {
-  const counted = journey.events.filter(
-    (event) => event.countsAsAction && event.outcome === "success",
-  );
+  const counted = countedActionEvents(journey.events);
   if (counted.length === 0) {
     return null;
   }

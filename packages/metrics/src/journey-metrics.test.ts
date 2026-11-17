@@ -73,6 +73,25 @@ describe("computeJourneyMetrics", () => {
     expect(metrics.navigationEventCount).toBe(1);
   });
 
+  test("counts only unique successful click steps as actions", () => {
+    const events = [
+      makeEvent(1, "navigate", { countsAsAction: true }),
+      makeEvent(2, "goal-selected", { countsAsAction: true }),
+      makeEvent(3, "click", { countsAsAction: true }),
+      makeEvent(3, "click", { countsAsAction: true, label: "duplicate step" }),
+      makeEvent(4, "click", { countsAsAction: false }),
+      makeEvent(5, "complete", { countsAsAction: true }),
+      makeEvent(6, "click", { countsAsAction: true, outcome: "failure" }),
+    ];
+
+    const metrics = computeJourneyMetrics(journey({ events }), "join");
+
+    // Non-click events are never actions regardless of their flag, a repeated
+    // counted step is counted once, and flagged-out or failed clicks do not
+    // count — only the single unique successful click at step 3 does.
+    expect(metrics.actionCount).toBe(1);
+  });
+
   test("reports pending with null counts when the journey record is absent", () => {
     const metrics = computeJourneyMetrics(undefined, "join");
 

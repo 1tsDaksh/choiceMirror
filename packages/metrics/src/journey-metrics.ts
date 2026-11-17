@@ -30,6 +30,37 @@ function computeDurationMs(journey: JourneyRecord): number | null {
 }
 
 /**
+ * The single definition of a counted action: a successful click event the
+ * runner flagged as work the user did. Goal selection, navigation and
+ * completion are evidence, never actions — whatever their flag says.
+ */
+export function isCountedAction(event: TraceEvent): boolean {
+  return (
+    event.type === "click" &&
+    event.countsAsAction &&
+    event.outcome === "success"
+  );
+}
+
+/**
+ * Counted actions in trace order, deduplicated by step number so a repeated
+ * step reference can never inflate a journey's action count.
+ */
+export function countedActionEvents(
+  events: readonly TraceEvent[],
+): TraceEvent[] {
+  const seenSteps = new Set<number>();
+  const counted: TraceEvent[] = [];
+  for (const event of events) {
+    if (isCountedAction(event) && !seenSteps.has(event.stepNo)) {
+      seenSteps.add(event.stepNo);
+      counted.push(event);
+    }
+  }
+  return counted;
+}
+
+/**
  * Pure, deterministic metrics for one journey, derived only from its stored
  * evidence. An absent journey is `pending` with null counts — never zero.
  */
@@ -91,11 +122,7 @@ export function computeJourneyMetrics(
     journeyId: journey.id,
     goalId: journey.goalId,
     outcome: STATUS_OUTCOMES[journey.status],
-    actionCount: traceRecorded
-      ? events.filter(
-          (event) => event.countsAsAction && event.outcome === "success",
-        ).length
-      : null,
+    actionCount: traceRecorded ? countedActionEvents(events).length : null,
     navigationEventCount: traceRecorded
       ? events.filter((event) => event.type === "navigate").length
       : null,

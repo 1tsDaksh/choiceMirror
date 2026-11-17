@@ -110,8 +110,15 @@ describe("buildComparisonReport", () => {
     expect(finding.title).toBe("Evidence could not be validated");
     expect(finding.quality).toBe("insufficient-evidence");
     expect(finding.category).toBe("inconclusive");
-    // The detail itself is parseable, so its metrics are kept.
-    expect(report.metrics.result).toBe("observed-asymmetry");
+    // A degraded report is always inconclusive: raw journey counts and
+    // comparability reasons survive, but no comparative number may be shown.
+    expect(report.metrics.result).toBe("inconclusive");
+    expect(report.metrics.actionDifference).toBeNull();
+    expect(report.metrics.heavierJourney).toBeNull();
+    expect(report.metrics.actionRatio).toBeNull();
+    expect(report.metrics.journeys[0].actionCount).toBe(1);
+    expect(report.metrics.journeys[1].actionCount).toBe(3);
+    expect(report.metrics.comparableConditions.comparable).toBe(true);
     expect(comparisonReportSchema.parse(report)).toEqual(report);
   });
 

@@ -1,7 +1,14 @@
 import type { Finding } from "@choicemirror/metrics";
 
+import {
+  evidenceChipLabel,
+  type GoalLetter,
+} from "@/lib/evidence-chips";
+
 type FindingCardProps = {
   finding: Finding;
+  /** Journey id → Goal A/B, resolved from `comparison.goalIds` upstream. */
+  goalLetters: ReadonlyMap<string, GoalLetter>;
   onInspectEvidence?: () => void;
 };
 
@@ -29,9 +36,14 @@ const qualityLabels: Record<Finding["quality"], string> = {
   "insufficient-evidence": "Insufficient evidence",
 };
 
-function evidenceChipLabel(entry: Finding["evidence"][number], index: number): string {
-  const goalLetter = index === 0 ? "Goal A" : "Goal B";
-  return `${goalLetter} · steps ${entry.stepNos.join(",")}`;
+function chipClass(letter: GoalLetter | undefined): string {
+  if (letter === "Goal A") {
+    return "border-journey-a/40 text-journey-a";
+  }
+  if (letter === "Goal B") {
+    return "border-journey-b/40 text-journey-b";
+  }
+  return "border-white/20 text-secondary-text";
 }
 
 function MicroSection({
@@ -65,6 +77,7 @@ function MicroSection({
 
 export function FindingCard({
   finding,
+  goalLetters,
   onInspectEvidence,
 }: FindingCardProps) {
   const category = categoryAppearance[finding.category];
@@ -108,16 +121,14 @@ export function FindingCard({
             Supporting evidence
           </h3>
           <div className="mt-2 flex flex-wrap gap-2">
-            {finding.evidence.map((entry, index) => (
+            {finding.evidence.map((entry) => (
               <span
                 key={entry.journeyId}
-                className={`inline-block rounded-full border px-2.5 py-1 font-mono text-xs ${
-                  index === 0
-                    ? "border-journey-a/40 text-journey-a"
-                    : "border-journey-b/40 text-journey-b"
-                }`}
+                className={`inline-block rounded-full border px-2.5 py-1 font-mono text-xs ${chipClass(
+                  goalLetters.get(entry.journeyId),
+                )}`}
               >
-                {evidenceChipLabel(entry, index)}
+                {evidenceChipLabel(entry, goalLetters)}
               </span>
             ))}
           </div>

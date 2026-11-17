@@ -206,6 +206,14 @@ describe("computeComparisonMetrics", () => {
       "Execution modes differ between journeys.",
     ]);
     expect(metrics.result).toBe("inconclusive");
+    // Comparative numbers are withheld whenever conditions differ, even
+    // though both journeys completed with recorded counts.
+    expect(metrics.actionDifference).toBeNull();
+    expect(metrics.heavierJourney).toBeNull();
+    expect(metrics.actionRatio).toBeNull();
+    // The per-journey raw counts are never hidden by the mismatch.
+    expect(metrics.journeys[0].actionCount).toBe(1);
+    expect(metrics.journeys[1].actionCount).toBe(3);
   });
 
   test("computes valid metrics from legacy phase 2 records without mode or ai", () => {

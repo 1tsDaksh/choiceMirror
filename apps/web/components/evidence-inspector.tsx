@@ -4,6 +4,7 @@ import type {
   ComparisonDetail as ComparisonDetailData,
   TraceEvent,
 } from "@choicemirror/contracts";
+import { isCountedAction } from "@choicemirror/metrics";
 
 import { ComparisonState } from "@/components/comparison-state";
 import {
@@ -134,7 +135,7 @@ export function EvidenceInspector({
                 </p>
                 <p>{event.label}</p>
                 <p className={outcomeClass(event.outcome)}>{event.outcome}</p>
-                <p>{`Counted as an action: ${event.countsAsAction ? "Yes" : "No"}`}</p>
+                <p>{`Counted as an action: ${isCountedAction(event) ? "Yes" : "No"}`}</p>
                 {event.detail ? (
                   <p className="text-secondary-text">{event.detail}</p>
                 ) : null}

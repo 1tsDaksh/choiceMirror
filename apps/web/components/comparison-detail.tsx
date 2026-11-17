@@ -6,7 +6,7 @@ import type {
   ComparisonDetail as ComparisonDetailData,
   Scenario,
 } from "@choicemirror/contracts";
-import { buildComparisonReport } from "@choicemirror/metrics";
+import { buildComparisonReport, isCountedAction } from "@choicemirror/metrics";
 import type { JourneyMetrics } from "@choicemirror/metrics";
 
 import { ComparisonState } from "@/components/comparison-state";
@@ -16,6 +16,7 @@ import { FindingCard } from "@/components/finding-card";
 import { MethodologyPanel } from "@/components/methodology-panel";
 import { MetricCard } from "@/components/metric-card";
 import { MirroredJourneys } from "@/components/mirrored-journeys";
+import { goalLetterByJourneyId } from "@/lib/evidence-chips";
 import { selectEvent, type EventSelection } from "@/lib/selection";
 
 type ComparisonDetailProps = {
@@ -151,6 +152,26 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
   const metrics = report.metrics;
   const [slotA, slotB] = metrics.journeys;
   const hasAi = slotA.ai !== null || slotB.ai !== null;
+
+  // The completed banner may only claim completeness when both journeys
+  // finished and every stored screenshot resolves — a failed or missing
+  // journey means the evidence below is incomplete.
+  const storedEvidenceComplete =
+    slotA.outcome === "completed" &&
+    slotB.outcome === "completed" &&
+    slotA.evidence.complete &&
+    slotB.evidence.complete;
+  const bannerMessage =
+    status === "completed" && !storedEvidenceComplete
+      ? "This run finished, but the stored evidence below is incomplete — see the findings and limitations."
+      : appearance.message;
+
+  // Evidence chips resolve their goal by journey id via comparison.goalIds,
+  // never by position in the evidence array.
+  const goalLetters = goalLetterByJourneyId(
+    detail.comparison.goalIds,
+    detail.journeys,
+  );
   const inferenceCalls =
     (slotA.ai?.inferenceCalls ?? 0) + (slotB.ai?.inferenceCalls ?? 0);
   const inputTokens =
@@ -177,7 +198,7 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
       }
       const action = [...journey.events]
         .sort((left, right) => left.stepNo - right.stepNo)
-        .find((event) => event.countsAsAction);
+        .find(isCountedAction);
       if (action) {
         picked = selectEvent(index, action);
         break;
@@ -203,7 +224,7 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
           className={`rounded-xl border p-4 ${appearance.className}`}
         >
           <p className="font-semibold">{appearance.label}</p>
-          <p className="mt-1 text-sm">{appearance.message}</p>
+          <p className="mt-1 text-sm">{bannerMessage}</p>
           {error ? <p className="mt-1 text-sm">{error}</p> : null}
           {completedAt ? (
             <p className="mt-1 text-xs text-secondary-text">
@@ -222,6 +243,7 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
       {finding ? (
         <FindingCard
           finding={finding}
+          goalLetters={goalLetters}
           onInspectEvidence={handleInspectEvidence}
         />
       ) : null}
@@ -245,7 +267,7 @@ export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
           label="Action difference"
           value={metrics.actionDifference?.toString() ?? "—"}
           unit="actions"
-          definition="Absolute difference between the two completed journeys; unavailable until both complete."
+          definition="Absolute difference between the two completed journeys; unavailable unless both completed under matching conditions."
           unavailable={metrics.actionDifference === null}
         />
         <MetricCard

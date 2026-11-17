@@ -21,8 +21,10 @@ function effectiveMode(
 /**
  * Pure, deterministic paired metrics. Journeys are mapped onto
  * `comparison.goalIds` — the stored array order is not goal order. Numeric
- * differences exist only when both journeys completed with recorded counts;
- * otherwise the result is `inconclusive` with human-readable reasons.
+ * differences exist only when both journeys completed with recorded counts
+ * under matching conditions (no comparability reasons); otherwise the
+ * result is `inconclusive` with human-readable reasons while each journey
+ * keeps its own recorded count.
  */
 export function computeComparisonMetrics(input: {
   comparison: ComparisonRecord;
@@ -82,7 +84,14 @@ export function computeComparisonMetrics(input: {
   let actionDifference: number | null = null;
   let heavierJourney: "a" | "b" | null = null;
   let actionRatio: number | null = null;
-  if (bothCompleted && countA !== null && countB !== null) {
+  // A difference measured across mismatched conditions would contradict the
+  // inconclusive result, so the comparative numbers are withheld entirely.
+  if (
+    bothCompleted &&
+    countA !== null &&
+    countB !== null &&
+    reasons.length === 0
+  ) {
     actionDifference = Math.abs(countA - countB);
     heavierJourney =
       countA > countB ? "a" : countB > countA ? "b" : null;

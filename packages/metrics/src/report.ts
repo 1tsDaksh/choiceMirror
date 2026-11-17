@@ -54,9 +54,26 @@ function safeMetrics(detail: ComparisonDetail): ComparisonMetrics {
 }
 
 /**
- * Degrades to a report with one insufficient-evidence finding. Keeps the
- * computed metrics when the detail is still parseable; otherwise both
- * journey slots are reported as pending. Always schema-valid.
+ * Degraded evidence never surfaces comparative numbers: raw journey counts
+ * and comparability reasons survive, the verdict does not.
+ */
+function degradedMetrics(detail: ComparisonDetail): ComparisonMetrics {
+  const metrics = safeMetrics(detail);
+  return {
+    ...metrics,
+    actionDifference: null,
+    heavierJourney: null,
+    actionRatio: null,
+    result: "inconclusive",
+  };
+}
+
+/**
+ * Degrades to a report with one insufficient-evidence finding. The report
+ * is always `inconclusive` with null comparative fields — a validation
+ * failure may never present an action difference. Journey metrics are kept
+ * when the detail is still parseable; otherwise both journey slots are
+ * reported as pending. Always schema-valid.
  */
 export function degradeReport(
   detail: ComparisonDetail,
@@ -76,7 +93,7 @@ export function degradeReport(
   };
 
   return {
-    metrics: safeMetrics(detail),
+    metrics: degradedMetrics(detail),
     findings: [finding],
     validation: { valid: false, problems },
   };

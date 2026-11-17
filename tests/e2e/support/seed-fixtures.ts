@@ -56,6 +56,8 @@ type CompletedJourneySeed = {
   completedAt: string;
   /** Phase 2 records predate execution modes; pass false to omit `mode`. */
   includeMode?: boolean;
+  /** Cite a screenshot id that is never stored (dangling evidence). */
+  dangleScreenshot?: boolean;
 };
 
 /**
@@ -93,6 +95,9 @@ function completedJourney(seed: CompletedJourneySeed): JourneyRecord {
   ];
 
   seed.actionLabels.forEach((label, index) => {
+    const screenshotId = seed.dangleScreenshot
+      ? `${id}-ghost-${index + 1}.png`
+      : attach(`step-${index + 1}`, `After action ${index + 1}`);
     events.push(
       traceEvent({
         stepNo: 2 + index,
@@ -100,7 +105,7 @@ function completedJourney(seed: CompletedJourneySeed): JourneyRecord {
         type: "click",
         label,
         countsAsAction: true,
-        screenshotId: attach(`step-${index + 1}`, `After action ${index + 1}`),
+        screenshotId,
       }),
     );
   });
@@ -306,6 +311,112 @@ const SEED_FIXTURES: SeedFixture[] = [
         fileName: "cmp_5eed000000000004-reject.json",
         contents: "{not json",
       },
+    ],
+  },
+  {
+    // Mismatched conditions: both journeys completed with recorded counts,
+    // but under different seeds — never comparable, never a difference.
+    comparison: {
+      id: "cmp_5eed000000000005",
+      scenarioId: "membership-asymmetric",
+      goalIds: ["join", "leave"],
+      seed: "5eed-mismatch",
+      status: "completed",
+      createdAt: "2026-11-16T10:40:00.000Z",
+      completedAt: "2026-11-16T10:40:20.000Z",
+      mode: "deterministic",
+    },
+    journeys: [
+      completedJourney({
+        comparisonId: "cmp_5eed000000000005",
+        goalId: "join",
+        seed: "5eed-mismatch",
+        actionLabels: ["Join workspace"],
+        startedAt: "2026-11-16T10:40:00.000Z",
+        completedAt: "2026-11-16T10:40:08.000Z",
+      }),
+      completedJourney({
+        comparisonId: "cmp_5eed000000000005",
+        goalId: "leave",
+        seed: "5eed-other",
+        actionLabels: [
+          "Review the leaving notice",
+          "Confirm the membership choice",
+          "Leave workspace",
+        ],
+        startedAt: "2026-11-16T10:40:00.000Z",
+        completedAt: "2026-11-16T10:40:20.000Z",
+      }),
+    ],
+  },
+  {
+    // Asymmetric evidence: goal A completed with no counted actions while
+    // goal B recorded one — the only evidence entry belongs to goal B.
+    comparison: {
+      id: "cmp_5eed000000000006",
+      scenarioId: "membership-asymmetric",
+      goalIds: ["join", "leave"],
+      seed: "5eed-empty-a",
+      status: "completed",
+      createdAt: "2026-11-16T10:50:00.000Z",
+      completedAt: "2026-11-16T10:50:20.000Z",
+      mode: "deterministic",
+    },
+    journeys: [
+      completedJourney({
+        comparisonId: "cmp_5eed000000000006",
+        goalId: "join",
+        seed: "5eed-empty-a",
+        actionLabels: [],
+        startedAt: "2026-11-16T10:50:00.000Z",
+        completedAt: "2026-11-16T10:50:08.000Z",
+      }),
+      completedJourney({
+        comparisonId: "cmp_5eed000000000006",
+        goalId: "leave",
+        seed: "5eed-empty-a",
+        actionLabels: ["Leave workspace"],
+        startedAt: "2026-11-16T10:50:00.000Z",
+        completedAt: "2026-11-16T10:50:20.000Z",
+      }),
+    ],
+  },
+  {
+    // Dangling evidence: goal A's counted action cites a screenshot that is
+    // never stored, so finding validation fails on a parseable detail whose
+    // raw counts would otherwise show a 2-action difference.
+    comparison: {
+      id: "cmp_5eed000000000007",
+      scenarioId: "membership-asymmetric",
+      goalIds: ["join", "leave"],
+      seed: "5eed-dangle",
+      status: "completed",
+      createdAt: "2026-11-16T11:00:00.000Z",
+      completedAt: "2026-11-16T11:00:20.000Z",
+      mode: "deterministic",
+    },
+    journeys: [
+      completedJourney({
+        comparisonId: "cmp_5eed000000000007",
+        goalId: "join",
+        seed: "5eed-dangle",
+        actionLabels: ["Join workspace"],
+        startedAt: "2026-11-16T11:00:00.000Z",
+        completedAt: "2026-11-16T11:00:08.000Z",
+        dangleScreenshot: true,
+      }),
+      completedJourney({
+        comparisonId: "cmp_5eed000000000007",
+        goalId: "leave",
+        seed: "5eed-dangle",
+        actionLabels: [
+          "Review the leaving notice",
+          "Confirm the membership choice",
+          "Leave workspace",
+        ],
+        startedAt: "2026-11-16T11:00:00.000Z",
+        completedAt: "2026-11-16T11:00:20.000Z",
+      }),
     ],
   },
 ];

@@ -205,6 +205,36 @@ describe("buildFindings", () => {
     );
   });
 
+  test("cites only counted click events even when other events are flagged", () => {
+    const join = journey("join");
+    const tampered: JourneyRecord = {
+      ...join,
+      events: join.events.map((event) =>
+        event.type === "navigate"
+          ? { ...event, countsAsAction: true }
+          : event,
+      ),
+    };
+    const journeys = [tampered, journey("leave", { actions: 3 })];
+
+    const metrics = computeComparisonMetrics({
+      comparison: comparison(),
+      journeys,
+    });
+    const finding = buildFindings(metrics, journeys)[0];
+    if (!finding) {
+      throw new Error("expected exactly one finding");
+    }
+
+    // The flagged navigate event is neither counted nor cited: evidence step
+    // numbers match the counted-action metric.
+    expect(metrics.journeys[0].actionCount).toBe(1);
+    const joinEvidence = finding.evidence.find(
+      (entry) => entry.journeyId === tampered.id,
+    );
+    expect(joinEvidence?.stepNos).toEqual([3]);
+  });
+
   test("never emits verdict language in title explanation observed calculated or interpreted", () => {
     for (const kind of ["asymmetry", "balanced", "failed", "missing"] as const) {
       const { finding } = buildCase(kind);
