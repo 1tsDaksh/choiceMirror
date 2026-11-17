@@ -1,4 +1,4 @@
-import { parseComparisonId } from "@choicemirror/contracts";
+import { getScenario, parseComparisonId } from "@choicemirror/contracts";
 import { notFound } from "next/navigation";
 
 import { ComparisonDetail } from "@/components/comparison-detail";
@@ -23,6 +23,13 @@ export default async function ComparisonPage({
     notFound();
   }
 
+  const scenario = getScenario(comparison.scenarioId);
+  if (!scenario) {
+    notFound();
+  }
+
   const journeys = await store.getJourneys(comparisonId);
-  return <ComparisonDetail initial={{ comparison, journeys }} />;
+  return (
+    <ComparisonDetail initial={{ comparison, journeys }} scenario={scenario} />
+  );
 }

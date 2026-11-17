@@ -2,13 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { ComparisonDetail as ComparisonDetailData } from "@choicemirror/contracts";
+import type {
+  ComparisonDetail as ComparisonDetailData,
+  Scenario,
+} from "@choicemirror/contracts";
+import { buildComparisonReport } from "@choicemirror/metrics";
+import type { JourneyMetrics } from "@choicemirror/metrics";
 
 import { ComparisonState } from "@/components/comparison-state";
+import { ComparisonSummary } from "@/components/comparison-summary";
+import { FindingCard } from "@/components/finding-card";
 import { JourneyPanel } from "@/components/journey-panel";
+import { MetricCard } from "@/components/metric-card";
 
 type ComparisonDetailProps = {
   initial: ComparisonDetailData;
+  scenario: Scenario;
 };
 
 type ComparisonStatus = ComparisonDetailData["comparison"]["status"];
@@ -36,16 +45,23 @@ const statusAppearance: Record<
   },
 };
 
+const outcomeLabels: Record<JourneyMetrics["outcome"], string> = {
+  completed: "Completed",
+  failed: "Failed",
+  blocked: "Blocked",
+  "timed-out": "Timed out",
+  pending: "Pending",
+};
+
 const POLL_INTERVAL_MS = 750;
 
-export function ComparisonDetail({ initial }: ComparisonDetailProps) {
+export function ComparisonDetail({ initial, scenario }: ComparisonDetailProps) {
   const [detail, setDetail] = useState<ComparisonDetailData>(initial);
   const [statusFailed, setStatusFailed] = useState(false);
   const requestSeqRef = useRef(0);
   const appliedSeqRef = useRef(0);
 
-  const { id, status, scenarioId, seed, error, completedAt } =
-    detail.comparison;
+  const { id, status, error, completedAt } = detail.comparison;
 
   useEffect(() => {
     if (statusFailed || status !== "running") {
@@ -121,28 +137,30 @@ export function ComparisonDetail({ initial }: ComparisonDetailProps) {
     detail.journeys.find((journey) => journey.goalId === goalId),
   );
 
+  const report = buildComparisonReport(detail);
+  const finding = report.findings[0];
+  const metrics = report.metrics;
+  const [slotA, slotB] = metrics.journeys;
+  const hasAi = slotA.ai !== null || slotB.ai !== null;
+  const inferenceCalls =
+    (slotA.ai?.inferenceCalls ?? 0) + (slotB.ai?.inferenceCalls ?? 0);
+  const inputTokens =
+    (slotA.ai?.inputTokens ?? 0) + (slotB.ai?.inputTokens ?? 0);
+  const outputTokens =
+    (slotA.ai?.outputTokens ?? 0) + (slotB.ai?.outputTokens ?? 0);
+  const rejectedProposals =
+    (slotA.ai?.rejectedProposals ?? 0) + (slotB.ai?.rejectedProposals ?? 0);
+
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        <p className="font-mono text-xs uppercase tracking-widest text-journey-a">
-          Comparison evidence
-        </p>
-        <h1 className="text-3xl font-bold">Run {id}</h1>
-        <p className="text-sm text-secondary-text">
-          Scenario <span className="font-mono">{scenarioId}</span> · seed{" "}
-          <span className="font-mono">{seed}</span>
-        </p>
-        <p>
-          <span
-            className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
-              mode === "ai"
-                ? "bg-highlight/15 text-highlight"
-                : "bg-white/10 text-secondary-text"
-            }`}
-          >
-            {modeLabel}
-          </span>
-        </p>
+        <ComparisonSummary
+          scenario={scenario}
+          comparison={detail.comparison}
+          report={report}
+          modeLabel={modeLabel}
+          modeIsAi={mode === "ai"}
+        />
         <div
           role="status"
           aria-live="polite"
@@ -158,6 +176,45 @@ export function ComparisonDetail({ initial }: ComparisonDetailProps) {
           ) : null}
         </div>
       </header>
+
+      {finding ? <FindingCard finding={finding} /> : null}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          label="Journey A actions"
+          value={slotA.actionCount?.toString() ?? "—"}
+          unit="recorded actions"
+          definition="Counted successful click events in the trace; goal selection is excluded."
+          unavailable={slotA.actionCount === null}
+        />
+        <MetricCard
+          label="Journey B actions"
+          value={slotB.actionCount?.toString() ?? "—"}
+          unit="recorded actions"
+          definition="Counted successful click events in the trace; goal selection is excluded."
+          unavailable={slotB.actionCount === null}
+        />
+        <MetricCard
+          label="Action difference"
+          value={metrics.actionDifference?.toString() ?? "—"}
+          unit="actions"
+          definition="Absolute difference between the two completed journeys; unavailable until both complete."
+          unavailable={metrics.actionDifference === null}
+        />
+        <MetricCard
+          label="Completion outcomes"
+          value={`${outcomeLabels[slotA.outcome]} / ${outcomeLabels[slotB.outcome]}`}
+          definition="Actual stored journey outcomes; a completed comparison can still contain a failed journey."
+        />
+        {hasAi ? (
+          <MetricCard
+            label="Execution metadata"
+            value={`${inferenceCalls} inference calls`}
+            unit={`${inputTokens} input / ${outputTokens} output tokens · ${rejectedProposals} rejected${aiModel !== undefined ? ` · ${aiModel}` : ""}`}
+            definition="Model activity recorded for this run — execution cost, not a measure of interface friction."
+          />
+        ) : null}
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <JourneyPanel journey={goalJourneys[0]} goalIndex={0} />

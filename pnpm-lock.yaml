@@ -236,6 +236,9 @@ importers:
       '@choicemirror/contracts':
         specifier: workspace:^
         version: link:../../packages/contracts
+      '@choicemirror/metrics':
+        specifier: workspace:^
+        version: link:../../packages/metrics
       '@choicemirror/storage':
         specifier: workspace:^
         version: link:../../packages/storage
