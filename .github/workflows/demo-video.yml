@@ -125,7 +125,7 @@ jobs:
               print(f"VERIFIED: {path}, duration={duration:.1f}s, 4 nonblank samples, {len(set(samples))} distinct frames")
           PY
       - name: Upload actual MP4 videos, screenshot and run metadata
-        if: always()
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: choicemirror-${{ env.DEMO_MODE }}-video-${{ github.run_number }}
