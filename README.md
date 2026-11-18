@@ -4,7 +4,67 @@
 
 ChoiceMirror is an AI-powered behavioural UX auditor for **SLAY HACKS 2026**. It compares opposing user journeys on the same interface—such as **join vs leave** or **accept vs reject**—and is designed to show measurable friction with inspectable browser evidence.
 
-> **Current status:** Phase 5 validated with live inference (2026-11-18). The repository runs two local applications, four controlled benchmark fixtures, and a Playwright runner with two execution modes: the deterministic runner (default) executes both opposing goals of any scenario from equivalent starting conditions, and the optional **AI (Nebius)** mode lets a real model observe each page and choose the next validated action. Structured evidence — ordered events, action counts, screenshots, and model-reported decisions with token usage — is stored locally. The comparison dashboard derives deterministic metrics and one evidence-linked finding from that stored evidence: a headline finding you can open to its supporting events and screenshots, mirrored Goal A/B tracks, an evidence inspector, and a methodology panel. Phase 5 validation against the real Nebius API is complete: the eight-journey live evaluation finished **8/8** (20 inference calls, 13,590 tokens, 0 errors), the bounded live-repeatability sweep finished **12/12 pairs / 24 journeys** with zero round-over-round action-count drift, UI/UX validation passed **22/22** checks on the real running app, and the security & reliability audit verified **30/30** spec bullets with zero defects (212 unit tests in 31 files, 52 Playwright tests). Submission materials — live test results, validation report, security review, demo script, Devpost draft and checklist, and seven provenance-backed screenshots — live under [`docs/submission/`](./docs/submission/). What remains is owner-only: eligibility/team registration, rubric verification with the organizers, and final submission approval (see `docs/submission/SUBMISSION_CHECKLIST.md`).
+> **Status (18 November 2026):** Phases 1–4 and Phase 5 technical validation/submission preparation are merged. Real Nebius-backed navigation has been tested on the four controlled scenarios, and the evidence dashboard is functional. **Devpost submission remains pending:** team/eligibility checks, organiser clarifications, an accessible working demo or video, and owner approval. See the [submission checklist](docs/submission/SUBMISSION_CHECKLIST.md).
+
+## Screenshots — the real application
+
+These screenshots were captured on **18 November 2026** from the running ChoiceMirror application using **real Nebius AI comparisons** against its **synthetic local benchmark**. They are not mock-ups or third-party website audits. See [screenshot provenance](docs/submission/assets/PROVENANCE.md).
+
+### Asymmetric comparison: join vs leave
+
+![ChoiceMirror AI comparison dashboard: Join required one recorded action, Leave required three, with a two-action gap and linked evidence](docs/submission/assets/03-comparison-asymmetric.png)
+
+*Actual AI-mode run [`cmp_04cbef31ed3a44c7`](docs/submission/VALIDATION_REPORT.md): **Join 1 action · Leave 3 actions · difference 2**. The screenshot shows the measured finding, execution metadata and both journey tracks.*
+
+### Balanced comparison and evidence inspector
+
+| Balanced outcome (1 action each) | Inspect a recorded browser step |
+| :---: | :---: |
+| ![Completed AI-mode balanced membership comparison with equal recorded action burden](docs/submission/assets/04-comparison-balanced.png) | ![ChoiceMirror evidence inspector displaying a genuine stored benchmark screenshot and model-reported navigation justification](docs/submission/assets/06-evidence-inspector.png) |
+| Actual run `cmp_dfe25737c0937557`: **0-action difference**. | Actual evidence from run `cmp_04cbef31ed3a44c7`: step-level screenshot, timestamp and AI decision. |
+
+<details>
+<summary><strong>View the other four screenshots (launcher, AI mode, mirrored timelines and limitations)</strong></summary>
+
+**Scenario launcher**
+
+![ChoiceMirror homepage with the asymmetric membership scenario selected](docs/submission/assets/01-homepage-launcher.png)
+
+**AI (Nebius) execution mode selected**
+
+![ChoiceMirror scenario launcher with the real AI Nebius execution mode selected](docs/submission/assets/02-ai-mode-selected.png)
+
+**Mirrored journeys and evidence checkpoints**
+
+![ChoiceMirror mirrored Goal A and Goal B journey timelines and recorded action checkpoints](docs/submission/assets/05-mirrored-journeys.png)
+
+**Finding methodology and limitations**
+
+![ChoiceMirror comparison finding showing the expanded limitations disclosure](docs/submission/assets/07-finding-limitations.png)
+
+</details>
+
+## Results — real Nebius inference and automated tests
+
+**Live AI outcomes (18 November 2026).** The model was `zai-org/GLM-5.3-Flash` via Nebius Token Factory. The eight-journey evaluation recorded the following *actual* successful action counts; the counts were also checked against each synthetic fixture's expectations.
+
+| Controlled scenario | Goal A (actions) | Goal B (actions) | Recorded difference |
+| --- | ---: | ---: | ---: |
+| Membership — balanced | Join: **1** | Leave: **1** | **0** |
+| Membership — asymmetric | Join: **1** | Leave: **3** | **2** |
+| Consent — balanced | Accept: **1** | Reject: **1** | **0** |
+| Consent — asymmetric | Accept: **1** | Reject: **3** | **2** |
+
+| Validation | Recorded result |
+| --- | --- |
+| **Real-model evaluation** | **8/8 journeys completed**, 20 inference calls, **13,590 tokens** (11,084 input + 2,506 output), 0 reported errors |
+| **Real-model repeatability** | **12/12 paired comparisons, 24/24 journeys completed** across 3 rounds per scenario; 61 inference calls, **40,619 total tokens**, 0 reported errors; identical action counts across rounds |
+| **Full regression suite** | **212 unit tests** and **52 Playwright E2E tests** passed; TypeScript, lint and both production builds passed |
+| **Application QA and security review** | 22/22 UI/UX checks passed; 30/30 security/reliability checklist items verified in the developer's documented audit |
+
+The live-model results above were **reported by the developer from credentialed runs**, with individual journeys and methodology documented in [LIVE_TEST_RESULTS.md](docs/submission/LIVE_TEST_RESULTS.md). GitHub [CI](https://github.com/1tsDaksh/choiceMirror/actions/runs/44305510039) independently confirms the credential-free regression suite, **not** the live Nebius runs. Journey durations include browser execution and model inference; they are not per-model-call latency. These outcomes describe small controlled benchmarks, **not** arbitrary websites, statistically established reliability, or proof of intentional manipulation.
+
+**Explore the evidence:** [Live test log](docs/submission/LIVE_TEST_RESULTS.md) · [Real UI validation](docs/submission/VALIDATION_REPORT.md) · [Security review](docs/submission/SECURITY_REVIEW.md) · [Seven screenshot provenance records](docs/submission/assets/PROVENANCE.md) · [Demo script](docs/submission/DEMO_SCRIPT.md)
 
 ## What works now
 
