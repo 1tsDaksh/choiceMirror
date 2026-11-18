@@ -33,7 +33,7 @@ From a fresh clone on Windows (PowerShell):
 npm install --global pnpm@12.18.0
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
-copy .env.example .env.local
+Copy-Item .env.example apps/web/.env.local
 pnpm dev
 ```
 
@@ -43,7 +43,7 @@ From a fresh clone on macOS or Linux:
 npm install --global pnpm@12.18.0
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
-cp .env.example .env.local
+cp .env.example apps/web/.env.local
 pnpm dev
 ```
 

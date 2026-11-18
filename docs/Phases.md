@@ -67,7 +67,7 @@ Observed result: zero action-count variance across all 8 goal paths (24 runs, al
 Re-run after the fixes: frozen install ✓, typecheck ✓, lint ✓ (zero warnings), **212 unit tests (31 files)**, **52 Playwright tests** (30 Phase 1–3 + 18 dashboard + 4 repeatability), both production builds ✓; the 8 repeatability lines above are unchanged (zero variance). New fixtures are seeded through the same `globalSetup` path (D-025); no production test hooks were added.
 
 ## Phase 5 — Validate and submit (Dec 3–7)
-**Status:** Complete (2026-11-18) — validation complete; submission awaits owner actions.
+**Status:** In progress — owner submission pending (2026-11-18). Technical validation and submission-preparation are complete (evidence below); the exit gate's "submitted project" half is unmet until the owner completes O1–O5 and a real Devpost submission is confirmed.
 - Run regression tests, fix failures, security review, document limitations.
 - Capture real screenshots and a 2–4 minute demo.
 - Create Devpost write-up with problem, solution, AI implementation, repo and live/local demo access.

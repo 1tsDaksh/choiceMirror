@@ -46,7 +46,7 @@ submitting** (owner action O2 below). Do not assume either page is authoritative
 | Project name + overview | `DEVPOST_DRAFT.md` — Project name, Tagline | ✅ ready to transfer |
 | Problem + solution | `DEVPOST_DRAFT.md` — Problem, Solution | ✅ ready to transfer |
 | AI implementation | `DEVPOST_DRAFT.md` — How it works, Technology, Responsible AI | ✅ ready to transfer |
-| Working demo link + access instructions | `README.md` (Local setup) + `DEMO_SCRIPT.md`; draft's "How it works" carries run instructions | ⚠️ owner must decide the hosted-demo story (O3) |
+| Working demo link + access instructions | `README.md` (Local setup) + `DEMO_SCRIPT.md`; draft's "How it works" carries run instructions | ⚠️ NOT yet satisfied — a working demo link or video is required (repo + instructions alone is not an established compliant path); see O3 |
 | Screenshots | `docs/submission/assets/` — 7 genuine screenshots + `PROVENANCE.md` | ✅ ready (7/7 sweep-clean) |
 | Source repository + setup docs | Repository + `README.md` setup (fresh-clone commands for Windows, macOS, and Linux) | ✅ ready |
 | Video (recommended 2–4 min) | `DEMO_SCRIPT.md` — full 4:00 script; **recording honestly unavailable** (two genuine capture attempts failed at the headless-screencast layer; no video is claimed or substituted) | ⚠️ owner decision required (O4) |
@@ -61,9 +61,15 @@ submitting** (owner action O2 below). Do not assume either page is authoritative
 - [ ] **O2 — Verify the rubric with the organizers.** Ask which weighting governs
       (F6 25/25/20/15/15 vs F7 30/30/20/20) and confirm the prize pool (F8). The draft
       already scores under both; adjust emphasis only if organizers clarify.
-- [ ] **O3 — Decide the demo-link story.** The product runs locally (two dev servers +
-      optional `NEBIUS_API_KEY`). Choose: hosted demo, screen recording, or repo +
-      instructions only — and write the access instructions in the Devpost field.
+- [ ] **O3 — Provide a working demo link + access instructions.** The Devpost field
+      requires a working demo with access instructions; the official rules accept a
+      video when a live demo is unavailable. The product runs locally (two dev servers +
+      optional `NEBIUS_API_KEY`), no hosted demo exists, and no recording could be
+      produced here (see O4) — so "repo + instructions only" is **not** an established
+      compliant alternative. Owner must stand up an accessible demo (hosted instance or
+      guided live demo) or obtain a video (O4), or get explicit organizer confirmation
+      that setup instructions alone are acceptable — then test the submitted link from a
+      clean session before entering it in the Devpost field.
 - [ ] **O4 — Decide on the video.** A complete 4:00 script exists (`DEMO_SCRIPT.md`), but
       no recording could be produced in this environment (two failed capture attempts,
       frame-verified). Either record externally or submit without the recommended video.
