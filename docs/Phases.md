@@ -79,7 +79,17 @@ Re-run after the fixes: frozen install ✓, typecheck ✓, lint ✓ (zero warnin
 - **Live repeatability (opt-in, 2026-11-18):** 4 scenarios × 1 pair × 3 rounds = **12/12 pairs / 24 journeys**, every scenario × goal combination producing an identical action count round over round, `errors: []`, 61 inference calls, 40,619 tokens — `LIVE_TEST_RESULTS.md` §6.
 - **Real UI AI runs through the web app:** `cmp_04cbef31ed3a44c7` (membership-asymmetric, join 1 / leave 3, difference 2) and `cmp_dfe25737c0937557` (membership-balanced, 1 / 1), both `mode: "ai"` verified from stored records; UI/UX validation **22/22 spec §8 bullets PASS** on the real running app — `VALIDATION_REPORT.md`.
 - **Security & reliability audit:** **30/30 spec §7 bullets VERIFIED**, zero defects, including probe evidence (P1 unit re-run 212/212; P2 service-worker ×2 runs; P3 context isolation) — `SECURITY_REVIEW.md`.
-- **Test baseline:** 212 unit tests (31 files), 52 Playwright E2E tests, both production builds — the 2026-11-17 verified baseline re-confirmed credential-free during the audit (P1); the full final gate chain re-run is plan Task 11.
+- **Test baseline:** 212 unit tests (31 files), 52 Playwright E2E tests, both production builds — the unit half re-confirmed credential-free by audit probe P1; E2E and build rest on the 2026-11-17 gate chain, re-run verbatim below (final validation, 2026-11-18, branch `feat/phase-5-final-validation` at `d3a72e0`; full raw outputs in the Task 11 report):
+  ```text
+  npx pnpm@12.18.0 install --frozen-lockfile           → exit 0 ("Lockfile is up to date, resolution step is skipped", "Done in 78ms using pnpm v12.18.0")
+  npx pnpm@12.18.0 exec playwright install chromium    → exit 0
+  npx pnpm@12.18.0 typecheck                           → exit 0 (agent/storage/metrics/browser-runner/benchmark/web all "typecheck: Done")
+  npx pnpm@12.18.0 lint                                → exit 0 (benchmark + web "lint: Done")
+  npx vitest run                                       → exit 0 — Test Files 31 passed (31); Tests 212 passed (212)
+  npx playwright test --reporter=line                  → exit 0 — 52 passed (2.0m)
+  npx pnpm@12.18.0 build                               → exit 0 (both apps "build: Done"; /api/* and /comparisons/[id] render dynamically)
+  ```
+- **Final live re-run (2026-11-18, `NEBIUS_LIVE_REPEAT` unset):** `npx pnpm@12.18.0 test:live` exit 0 — **8/8 journeys completed**, 20 inference calls, 13,824 tokens (11,084 input / 2,740 output), latency 3,501 / 4,270 / 13,805 ms (min/median/max), 0 errors; the repeatability test reported `skipped` (`1 skipped, 1 passed`) — Review Focus 3 evidence. Strict `tsc --noEmit` over `tests/live/` via a temporary scratch tsconfig (uncommitted): exit 0.
 - **Assets & materials:** 7 genuine screenshots + `assets/PROVENANCE.md`; `DEMO_SCRIPT.md` (screen recording honestly unavailable — script-only demo, D-034); `DEVPOST_DRAFT.md` + `SUBMISSION_CHECKLIST.md` (competition facts verified against the official pages 2026-11-18).
 - **Not claimed:** the "submitted project" half of the exit gate — nothing is submitted; owner actions O1–O5 (eligibility/team registration, rubric verification with organizers, demo-link and video decisions, final approval) remain open in `SUBMISSION_CHECKLIST.md`.
 
