@@ -80,4 +80,80 @@ Verbatim top-level fields of the suite's `[live-eval]` output (the `statuses` ar
 
 ## 5. UI end-to-end AI runs (spec §5) — pending (plan Task 2)
 
-## 6. Bounded live repeatability (spec §6) — pending (plan Task 3)
+## 6. Bounded live repeatability (spec §6) — PASS
+
+**Run:** 2026-11-18 · `tests/live/repeatability.spec.ts` · exit code **0** · `1 passed (2.9m)` · webServer `next dev -p 3001` (reused dev server) · no retries · single attempt (no early stop — the full 12-pair target was attempted and completed in one run).
+
+- **Design:** 4 scenarios × 1 goal pair × 3 rounds (`REPEAT_ROUNDS = 3`) = **12 paired records / 24 journeys**; goals of each pair run sequentially per round; fresh `createNebiusAgent(config)` per journey; `comparisonId = "cmp_0123456789abcdee"`, `seed = "phase-5"`; test cap `test.setTimeout(1_800_000)`.
+- **Opt-in guard (verified before the credentialed run):**
+  1. No env at all → `npx playwright test --config playwright.live.config.ts --grep repeatability` reported **`1 skipped`, exit 0, zero network**.
+  2. `NEBIUS_LIVE=1` + key but **no** `NEBIUS_LIVE_REPEAT=1` → still reported **`1 skipped`, exit 0** — the repeat flag specifically gates this suite, so a plain `pnpm test:live` sweep never spends repeatability credits.
+- **Model:** `zai-org/GLM-5.3-Flash` (adapter default; the process env carried only `NEBIUS_API_KEY`, `NEBIUS_LIVE=1`, `NEBIUS_LIVE_REPEAT=1`).
+
+### Verbatim suite output
+
+```json
+[live-repeat] {
+  "pairsAttempted": 12,
+  "pairsCompleted": 12,
+  "journeysCompleted": 24,
+  "actionCountConsistency": {
+    "membership-balanced/join": [
+      1
+    ],
+    "membership-balanced/leave": [
+      1
+    ],
+    "membership-asymmetric/join": [
+      1
+    ],
+    "membership-asymmetric/leave": [
+      3
+    ],
+    "consent-balanced/accept": [
+      1
+    ],
+    "consent-balanced/reject": [
+      1
+    ],
+    "consent-asymmetric/accept": [
+      1
+    ],
+    "consent-asymmetric/reject": [
+      3
+    ]
+  },
+  "totalInferenceCalls": 61,
+  "totalTokens": 40619,
+  "latencyMs": {
+    "min": 2252,
+    "median": 3092,
+    "max": 34897
+  },
+  "errors": []
+}
+```
+
+### Variation narrative (actual, spec §6)
+
+- **Action-count consistency per scenario × goal across the 3 rounds:** every one of the 8 scenario × goal combinations produced a **single unique action count across all 3 rounds** — join 1, leave 1 (balanced) / 3 (asymmetric), accept 1, reject 1 (balanced) / 3 (asymmetric). Zero count drift round-to-round in this run: for each goal, `actionCountConsistency` is a one-element array, i.e. rounds 1, 2 and 3 all executed the same number of actions. The consistent counts also equal the fixture expectations from §4.2 (that is *validation against fixtures*, not an independent difficulty claim).
+- **Error list:** `errors: []` — no journey in any round reported an error; every journey reached the model (`inferenceCalls ≥ 1` assertion held for all 24).
+- **Latency spread:** journey wall-clock **2 252 / 3 092 / 34 897 ms** (min / median / max) around each `runAiJourney` call — browser execution + inference, not provider-side latency alone (same semantics as §4.2). The 34 897 ms max is ~11× the median: one journey was markedly slower than the rest, while the median (3 092 ms) sits right at the eight-journey suite's median (3 013 ms). Per-journey latencies are not part of the summary shape, so the outlier's journey is not attributed here — nothing is inferred beyond what the run printed.
+
+### Aggregate (actual)
+
+| Metric | Actual |
+|---|---|
+| Pairs attempted / completed | **12 / 12** (target 12 — attempted and completed counts are the run's own numbers, not the target restated) |
+| Journeys completed / attempted | **24 / 24** |
+| Round-over-round action-count agreement | 8 of 8 scenario × goal combinations fully consistent |
+| Total inference calls | **61** across 24 journeys (per-journey call counts are not part of the summary shape, so no per-journey breakdown is claimed here) |
+| Total tokens consumed | **40 619** (~3× the eight-journey suite's 13 590, consistent with the planned credit budget) |
+| Latency min / median / max | **2 252 / 3 092 / 34 897 ms** |
+| Failure classifications | none — `errors: []` |
+
+### Honesty notes
+
+- Every number above is transcribed verbatim from the run's `[live-repeat]` output; the 12-pair/24-journey figures are both the plan's target and this run's actual attempted/completed counts (the run finished the full sweep — no early stop, no retries, single attempt, exit 0 first try).
+- No confidence intervals are computed (spec §6); consistency is reported as unique-count arrays per scenario × goal, exactly as the suite emits them.
+- The suite's own assertions are honest smoke only (every journey reached the model; ≥1 genuine completion) — repeatability itself is *reported*, not hard-asserted, so a future drift case still prints its data.
