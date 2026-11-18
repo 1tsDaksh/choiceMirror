@@ -45,7 +45,7 @@
 
 **Narration:**
 
-> Here is a genuinely executed AI navigation — not scripted automation wearing an AI label. The model — Nebius, running `zai-org/GLM-5.3-Flash` — reads the controlled page, proposes each action, and a Playwright runner executes it in a real browser. Every proposal passes schema validation before it can run. In this recorded run, `cmp_04cbef31ed3a44c7`, the dashboard's execution metadata reads: six inference calls, 3,326 input / 699 output tokens, zero rejected — model activity recorded as execution cost, not as a measure of interface friction.
+> Here is a genuinely executed AI navigation — not scripted automation wearing an AI label. The model — Nebius, running `zai-org/GLM-5.3-Flash` — reads the controlled page, proposes each action, and a Playwright runner executes it in a real browser. Every proposal passes schema validation before it can run. In the stored run `cmp_04cbef31ed3a44c7`, the dashboard's execution metadata reads: six inference calls, 3,326 input / 699 output tokens, zero rejected — model activity recorded as execution cost, not as a measure of interface friction.
 
 ## Segment 4 — 1:40–2:35 · Comparison dashboard
 

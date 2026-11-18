@@ -80,7 +80,12 @@ Verbatim top-level fields of the suite's `[live-eval]` output (the `statuses` ar
 - The actual action counts equal the fixture expectations (join 1 / leave 3 / accept 1 / reject 3 in the asymmetric variants; 1/1 in the balanced variants). That is *validation against fixtures*, recorded as actual-vs-expected — not an independent difficulty claim.
 - Aggregate rows count only journeys that genuinely completed; nothing is pre-filled.
 
-## 5. UI end-to-end AI runs (spec §5) — pending (plan Task 2)
+## 5. UI end-to-end AI runs (spec §5) — PASS
+
+**Recorded in `VALIDATION_REPORT.md` §8.4** — the single authoritative UI run log (runs
+`cmp_04cbef31ed3a44c7` membership-asymmetric, join 1 / leave 3, difference 2, both actual
+= expected; `cmp_dfe25737c0937557` membership-balanced, join 1 / leave 1, difference 0;
+both stored records `"mode":"ai"`, `"status":"completed"`; no retries, no anomalies).
 
 ## 6. Bounded live repeatability (spec §6) — PASS
 
