@@ -1,0 +1,19 @@
+Welcome to ChoiceMirror — see both sides of the click.
+
+In many interfaces, opposing choices look similar but require different amounts of effort. Joining may be easy while leaving requires extra steps. ChoiceMirror measures the difference through actual browser actions and keeps the supporting evidence.
+
+This is a genuine live screen recording of the running ChoiceMirror application. For this public preview we select the deterministic execution mode, so no external model credentials are required. The separate Nebius AI mode has been tested with real inference, but deterministic actions in this preview are not presented as AI decisions.
+
+We start with the asymmetric membership scenario. ChoiceMirror launches two independent journeys from comparable starting conditions. The first goal is to join. The second is to leave. Playwright performs the recorded interaction sequence in real, isolated browser contexts. Every execution step produces structured trace evidence.
+
+The comparison dashboard then calculates the action difference. The synthetic joining journey takes one counted action. Leaving requires three. The gap is two actions, supported by the stored browser events and screenshots.
+
+We explore the mirrored timelines and inspect the evidence. Selecting a step opens the actual stored page screenshot alongside the event label, timestamp, outcome, and whether the step counts toward the measured result.
+
+Finally we run a balanced membership scenario. Both directions need one counted action and the system reports equal recorded action burden. The balanced example matters: ChoiceMirror should show a difference only when evidence supports one.
+
+The underlying architecture includes a real Nebius model navigation mode, schema validation and action-policy checks, a safe Playwright runner and a deterministic metrics package. The AI mode requires a secure provider key and is not exercised in this deterministic preview.
+
+All scenarios here are synthetic local benchmarks. Results do not establish intent or legal compliance for any real service.
+
+ChoiceMirror. See both sides of the click.
