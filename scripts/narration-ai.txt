@@ -1,0 +1,19 @@
+Welcome to ChoiceMirror — see both sides of the click.
+
+In many interfaces, opposing choices look similar but require different amounts of effort. Joining a service might be simple while leaving takes several confirmation steps. ChoiceMirror measures what actually happened in the browser instead of asking an AI to guess.
+
+You are watching a real ChoiceMirror application session. This recording uses genuine Nebius Token Factory inference, with model Z A I G L M five point three Flash. The model reads the controlled webpage, proposes a structured next action, and the application validates that proposal before Playwright executes it. The model cannot simply claim success.
+
+We begin with the asymmetric membership fixture. Both goals start from comparable conditions in a fresh browser context. The model navigates the joining path and the leaving path independently. The app records each event, every counted click, screenshot checkpoints, and model activity.
+
+The finished report shows one counted action to join and three to leave. That is an observed difference of two actions in this synthetic benchmark, not a verdict about any real company's intent.
+
+Next we inspect the evidence. Selecting a recorded step opens the actual browser screenshot and shows what happened at that point. For AI mode, the reported model justification is labelled as model-reported, not independently verified. These distinctions matter because trustworthy measurement depends on traceable sources.
+
+We also run the balanced membership benchmark as a control. Both directions should be equally short. The report is calculated from the actual recorded events, and incomplete or incomparable runs are reported honestly.
+
+ChoiceMirror combines a constrained Nebius navigation agent, isolated Playwright browser execution, structured validation, deterministic comparison metrics and an evidence-linked dashboard.
+
+It currently runs only on the four original synthetic benchmark fixtures, not third-party websites. Its action counts describe these recorded journeys; they are not legal findings.
+
+ChoiceMirror. See both sides of the click.
