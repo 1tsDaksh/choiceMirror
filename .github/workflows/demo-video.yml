@@ -1,0 +1,137 @@
+name: Record real ChoiceMirror desktop video
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/demo-video.yml"
+      - "scripts/record-demo.mjs"
+      - "scripts/narration-*.txt"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "ai = real Nebius (requires an Actions secret); deterministic = real app without model credits"
+        type: choice
+        required: true
+        default: ai
+        options:
+          - ai
+          - deterministic
+
+permissions:
+  contents: read
+
+jobs:
+  desktop-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # PR previews NEVER spend Nebius credits or receive secrets.
+      DEMO_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'deterministic' }}
+      NEBIUS_API_KEY: ${{ github.event_name == 'workflow_dispatch' && secrets.NEBIUS_API_KEY || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install real Chromium and desktop recorder
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb openbox ffmpeg espeak-ng
+      - name: Guard live AI credentials without printing them
+        shell: bash
+        run: |
+          if [[ "$DEMO_MODE" == "ai" && -z "$NEBIUS_API_KEY" ]]; then
+            echo "::error::To create the live AI video, set a fresh NEBIUS_API_KEY in GitHub repository Settings > Secrets and variables > Actions. Do not paste the key into an issue or PR."
+            exit 1
+          fi
+          echo "Recording mode: $DEMO_MODE"
+      - name: Record real headed browser interaction through FFmpeg X11 capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1440x900x24 -ac -nolisten tcp > "$RUNNER_TEMP/xvfb.log" 2>&1 &
+          xvfb_pid=$!
+          sleep 2
+          openbox > "$RUNNER_TEMP/openbox.log" 2>&1 &
+          openbox_pid=$!
+          pnpm --filter @choicemirror/benchmark dev > "$RUNNER_TEMP/benchmark.log" 2>&1 &
+          benchmark_pid=$!
+          pnpm --filter @choicemirror/web dev > "$RUNNER_TEMP/web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" "$benchmark_pid" "$openbox_pid" "$xvfb_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:3000/ > /dev/null &&
+               curl -fsS http://localhost:3001/ > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$ready" != true ]]; then
+            echo "::error::App or benchmark did not start."
+            tail -n 35 "$RUNNER_TEMP/web.log" || true
+            tail -n 35 "$RUNNER_TEMP/benchmark.log" || true
+            exit 1
+          fi
+          node scripts/record-demo.mjs
+      - name: Add spoken narration to the actual screen recording
+        shell: bash
+        run: |
+          set -euo pipefail
+          espeak-ng -v en-gb -s 145 -f "scripts/narration-${DEMO_MODE}.txt" -w demo/voice.wav
+          ffmpeg -hide_banner -loglevel error -y \
+            -i "demo/choicemirror-${DEMO_MODE}-screen.mp4" -i demo/voice.wav \
+            -filter_complex "[1:a]apad[aud]" -map 0:v:0 -map "[aud]" \
+            -c:v copy -c:a aac -b:a 128k -shortest \
+            -movflags +faststart "demo/choicemirror-${DEMO_MODE}-narrated.mp4"
+      - name: Validate playable duration and real changing video frames
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, hashlib, json, statistics, subprocess
+          clips = glob.glob("demo/*-screen.mp4") + glob.glob("demo/*-narrated.mp4")
+          if len(clips) != 2:
+              raise SystemExit("Missing the raw or narrated MP4")
+          for path in clips:
+              probe = subprocess.run(
+                  ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                   "-of", "json", path],
+                  capture_output=True, text=True, check=True)
+              duration = float(json.loads(probe.stdout)["format"]["duration"])
+              if not 75 <= duration <= 480:
+                  raise SystemExit(f"Video duration invalid: {duration:.1f}s")
+              samples = []
+              for fraction in [0.12, 0.35, 0.60, 0.87]:
+                  frame = subprocess.run(
+                      ["ffmpeg", "-hide_banner", "-loglevel", "error",
+                       "-ss", str(duration*fraction), "-i", path,
+                       "-frames:v", "1", "-vf", "scale=32:32,format=gray",
+                       "-f", "rawvideo", "-"],
+                      capture_output=True, check=True).stdout
+                  if len(frame) != 1024 or statistics.pstdev(frame) < 8:
+                      raise SystemExit("Video has a blank/unreadable frame")
+                  samples.append(hashlib.sha256(frame).hexdigest())
+              if len(set(samples)) < 3:
+                  raise SystemExit("Video is frozen; refused to deliver")
+              print(f"VERIFIED: {path}, duration={duration:.1f}s, 4 nonblank samples, {len(set(samples))} distinct frames")
+          PY
+      - name: Upload actual MP4 videos, screenshot and run metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: choicemirror-${{ env.DEMO_MODE }}-video-${{ github.run_number }}
+          path: |
+            demo/*.mp4
+            demo/*-verification.png
+            demo/*-runs.json
+          if-no-files-found: warn
+          retention-days: 30
