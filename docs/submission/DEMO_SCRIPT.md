@@ -61,7 +61,7 @@
 
 **Narration:**
 
-> Every number is backed by evidence you can open. The mirrored timelines show each recorded step with its screenshot checkpoint, taken at execution time. The inspector opens the actual stored capture for "Join workspace", alongside the model's justification — clearly labelled *model-reported, not verified*. And the Limitations section states the boundaries up front: action differences are descriptive measurements — not proof of unlawful or intentional manipulation; this is a single run on the controlled local benchmark; counts reflect recorded browser actions, not backtracking or dead ends; and model-reported justifications are recorded as reported, not independently verified.
+> Every number is backed by evidence you can open. The mirrored timelines show each recorded step with its screenshot checkpoint, taken at execution time. The inspector opens the actual stored capture for "Join workspace", alongside the model's justification — clearly labelled *model-reported, not verified*. And the Limitations section states the boundaries up front: action differences are descriptive measurements — not proof of unlawful or intentional manipulation; this is a single run on the controlled local benchmark; counts reflect recorded browser actions only — backtracking, interruptions, and dead ends are not captured by the trace format; and model-reported justifications are recorded as reported, not independently verified.
 
 ## Segment 6 — 3:10–3:40 · Architecture and responsible AI
 

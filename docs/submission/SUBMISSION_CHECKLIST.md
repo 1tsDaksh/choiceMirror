@@ -48,7 +48,7 @@ submitting** (owner action O2 below). Do not assume either page is authoritative
 | AI implementation | `DEVPOST_DRAFT.md` — How it works, Technology, Responsible AI | ✅ ready to transfer |
 | Working demo link + access instructions | `README.md` (Local setup) + `DEMO_SCRIPT.md`; draft's "How it works" carries run instructions | ⚠️ owner must decide the hosted-demo story (O3) |
 | Screenshots | `docs/submission/assets/` — 7 genuine screenshots + `PROVENANCE.md` | ✅ ready (7/7 sweep-clean) |
-| Source repository + setup docs | Repository + `README.md` setup (fresh-clone commands, both platforms) | ✅ ready |
+| Source repository + setup docs | Repository + `README.md` setup (fresh-clone commands for Windows, macOS, and Linux) | ✅ ready |
 | Video (recommended 2–4 min) | `DEMO_SCRIPT.md` — full 4:00 script; **recording honestly unavailable** (two genuine capture attempts failed at the headless-screencast layer; no video is claimed or substituted) | ⚠️ owner decision required (O4) |
 
 ---

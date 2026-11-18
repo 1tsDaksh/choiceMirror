@@ -67,13 +67,21 @@ Observed result: zero action-count variance across all 8 goal paths (24 runs, al
 Re-run after the fixes: frozen install ✓, typecheck ✓, lint ✓ (zero warnings), **212 unit tests (31 files)**, **52 Playwright tests** (30 Phase 1–3 + 18 dashboard + 4 repeatability), both production builds ✓; the 8 repeatability lines above are unchanged (zero variance). New fixtures are seeded through the same `globalSetup` path (D-025); no production test hooks were added.
 
 ## Phase 5 — Validate and submit (Dec 3–7)
-**Status:** Planned.
+**Status:** Complete (2026-11-18) — validation complete; submission awaits owner actions.
 - Run regression tests, fix failures, security review, document limitations.
 - Capture real screenshots and a 2–4 minute demo.
 - Create Devpost write-up with problem, solution, AI implementation, repo and live/local demo access.
 - Verify final eligibility, submission format, judging criteria and deadline on official site.
 - Submit **before** Dec 7 cutoff, preferably by Dec 6.
 **Exit gate:** Submitted project with working demo, reproducible code and required materials.
+**Exit gate evidence (2026-11-18):** the validation half of the exit gate is complete with real numbers (branch `feat/phase-5-final-validation`; PR to be opened at plan Task 12):
+- **Live inference (real Nebius API, 2026-11-18):** authentication smoke 3/3 passed (endpoint auth HTTP 200, bounded chat completion, Zod-validated structured proposal); eight-journey evaluation **8/8 completed**, 20 inference calls, 13,590 tokens (11,084 input / 2,506 output), journey latency 2,391 / 3,013 / 7,697 ms (min/median/max), 0 errors, single attempt — `docs/submission/LIVE_TEST_RESULTS.md` §4.
+- **Live repeatability (opt-in, 2026-11-18):** 4 scenarios × 1 pair × 3 rounds = **12/12 pairs / 24 journeys**, every scenario × goal combination producing an identical action count round over round, `errors: []`, 61 inference calls, 40,619 tokens — `LIVE_TEST_RESULTS.md` §6.
+- **Real UI AI runs through the web app:** `cmp_04cbef31ed3a44c7` (membership-asymmetric, join 1 / leave 3, difference 2) and `cmp_dfe25737c0937557` (membership-balanced, 1 / 1), both `mode: "ai"` verified from stored records; UI/UX validation **22/22 spec §8 bullets PASS** on the real running app — `VALIDATION_REPORT.md`.
+- **Security & reliability audit:** **30/30 spec §7 bullets VERIFIED**, zero defects, including probe evidence (P1 unit re-run 212/212; P2 service-worker ×2 runs; P3 context isolation) — `SECURITY_REVIEW.md`.
+- **Test baseline:** 212 unit tests (31 files), 52 Playwright E2E tests, both production builds — the 2026-11-17 verified baseline re-confirmed credential-free during the audit (P1); the full final gate chain re-run is plan Task 11.
+- **Assets & materials:** 7 genuine screenshots + `assets/PROVENANCE.md`; `DEMO_SCRIPT.md` (screen recording honestly unavailable — script-only demo, D-034); `DEVPOST_DRAFT.md` + `SUBMISSION_CHECKLIST.md` (competition facts verified against the official pages 2026-11-18).
+- **Not claimed:** the "submitted project" half of the exit gate — nothing is submitted; owner actions O1–O5 (eligibility/team registration, rubric verification with organizers, demo-link and video decisions, final approval) remain open in `SUBMISSION_CHECKLIST.md`.
 
 ## Must-have vs cut list
 **Must have:** two opposite goals; controlled fair/asymmetric fixture; actual AI navigation; event evidence; deterministic measurements; usable comparison; source and demo.
@@ -85,14 +93,14 @@ Re-run after the fixes: frozen install ✓, typecheck ✓, lint ✓ (zero warnin
 - **Nov 22:** Two fully traced deterministic browser runs — met early (2026-11-15): all four scenarios execute both goals with stored traces and screenshots.
 - **Nov 27:** At least one successful safe AI-driven paired run — met by mock on 2026-11-15: all 8 AI journeys (4 scenarios × 2 goals) completed through the real driver against the local mock model, and the UI AI run finished `mode: "ai"` with labelled evidence; **met by the live model on 2026-11-16: 8/8 journeys completed against the real Nebius API (D-022).**
 - **Dec 2:** Evidence-grounded result screen and repeatability report — met early (2026-11-17): dashboard with evidence-linked finding, inspector and methodology panel; 8 repeatability lines with zero variance recorded above.
-- **Dec 6:** All presentation assets ready; submission tested.
+- **Dec 6:** All presentation assets ready; submission tested — assets met early (2026-11-18): 7 provenance-backed screenshots, demo script, Devpost draft and checklist all ready under `docs/submission/`; the submission itself is prepared but intentionally **not** submitted — it awaits owner approval (O1–O5) ahead of the 2026-12-07 cutoff.
 
 ## Current blocker register
-- Phase 1–4: no open implementation blockers after the verified exit-gate commands.
-- Verify participant eligibility: event listing indicates students only, age of majority.
-- Verify competing rubric versions on event page vs rules.
-- ~~Live Nebius credentials~~ **Resolved (2026-11-16):** the live evaluation ran with real credentials — 8/8 journeys completed (D-022). A browser-worker host for any hosted demo is still unselected.
-- Team assignments not yet confirmed.
+- Phase 1–4: no open implementation blockers after the verified exit-gate commands. Phase 5: validation complete (2026-11-18); no implementation blockers.
+- Verify participant eligibility: event listing indicates students only, age of majority — **sourced (2026-11-18):** verified competition facts and owner action O1 in `docs/submission/SUBMISSION_CHECKLIST.md` (F2/F3); still open, owner-side.
+- Verify competing rubric versions on event page vs rules — **sourced (2026-11-18):** both rubric variants recorded (F6 25/25/20/15/15 vs F7 30/30/20/20); owner action O2 asks the organizers which governs; still open, owner-side.
+- ~~Live Nebius credentials~~ **Resolved (2026-11-16):** the live evaluation ran with real credentials — 8/8 journeys completed (D-022); re-used for the Phase 5 live evaluation and repeatability sweep (2026-11-18). A browser-worker host for any hosted demo is still unselected (owner action O3).
+- Team assignments not yet confirmed — **sourced:** owner action O1 in `SUBMISSION_CHECKLIST.md`.
 
 ## Update convention
 Mark each phase `Planned`, `In progress`, `Blocked` or `Complete` with completion date and links to PRs or demo. Record any slippage and new scope in `Memory.md`.

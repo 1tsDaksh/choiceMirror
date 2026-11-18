@@ -34,7 +34,7 @@
 | H2 | Why opposing user journeys matter | **PASS** — the h1 poses the question the opposing journeys answer: *"Does this interface make both choices equally easy?"*; the explanation card *"01 Matched journeys — Each opposing goal starts from equivalent controlled state."* and *"02 Observed actions — Ordered events and screenshots will replace unsupported verdicts."* state why one-sided testing is not enough. |
 | H3 | How to choose a scenario | **PASS** — the launcher fieldset is labelled *"Select controlled scenario"* and lists four selectable cards, each with id, variant badge and description, e.g. *"membership-asymmetric · Controlled benchmark · asymmetric · Join vs leave — asymmetric — A synthetic workspace where joining stays direct while leaving requires three explicit confirmations."* Before selection the page says *"Select a scenario to inspect its opposing goals."* |
 | H4 | How to select AI or deterministic mode | **PASS** — a second fieldset is labelled *"Execution mode"* with two radio cards: *"Deterministic — Replays the app's own validated action plan."* and *"AI (Nebius) — The model observes each page and chooses the next validated action."* After scenario selection the helper line restates the mode's behaviour: *"AI mode lets the Nebius model observe each page and choose the next validated action. Runs execute locally with fixed limits."* |
-| H5 | How to launch a comparison | **PASS** — after selecting a scenario the paired-goals panel shows *"Run comparison"* (primary CTA) next to *"Explore manually in benchmark →"*. Verified end-to-end by keyboard only: Tab → Space on the scenario card → Tab → Enter on *Run comparison* navigated to a comparison page that reached `Completed` (`cmp_d590484c8b4fc74e`, deterministic). |
+| H5 | How to launch a comparison | **PASS** — after selecting a scenario the paired-goals panel shows *"Run comparison"* (primary CTA) next to *"Explore manually in benchmark →"*. Verified end-to-end by keyboard only: Tab → Space on the scenario card → Tab → Enter on *Run comparison* navigated to a comparison page that reached `Completed` (`cmp_d590484c8b4fc74e`, deterministic walkthrough, no inference — see header). |
 
 ## §8.2 Comparison dashboard
 
@@ -93,7 +93,8 @@ This section merges the former standalone run log `docs/submission/ui-runs.md` (
 the same commit as this report) and is now the single authoritative judge-facing
 validation record for UI runs. Every value below was observed on **2026-11-18** through
 the **real web UI** (`http://localhost:3000`) against the real benchmark
-(`http://localhost:3001`) with genuine Nebius inference — no mocks, no API calls standing
+(`http://localhost:3001`) with genuine Nebius inference (applies to Runs 1–2
+below; the §8.1–§8.3 walkthrough spent no inference credits — see header) — no mocks, no API calls standing
 in for UI runs. Fixture expected counts appear only in the labelled *expected (fixture)*
 parenthetical and are never presented as measurements; observed values are labelled
 *actual*. Companion §4 live results: `LIVE_TEST_RESULTS.md` (not duplicated here).

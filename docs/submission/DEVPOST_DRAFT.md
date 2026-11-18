@@ -66,7 +66,7 @@ events and screenshots. When evidence is missing, failed, or mismatched, the too
    methodology panel — with keyboard access, WCAG AA contrast, and honest states for
    running, failed, corrupt, and mismatched-seed runs. `[VALIDATION_REPORT.md §8.2, §8.3]`
 
-**To run it:** clone the repo, `pnpm install --frozen-lockfile`, `pnpm exec playwright install chromium`, copy `.env.example` to `apps/web/.env.local` (AI mode only needs `NEBIUS_API_KEY`), `pnpm dev`, open `http://localhost:3000`, pick a scenario, choose a mode, press **Run comparison**. Full instructions: `README.md` (fresh-clone setup for Windows, macOS, and Linux).
+**To run it:** clone the repo, `pnpm install --frozen-lockfile`, `pnpm exec playwright install chromium`, copy `.env.example` to `apps/web/.env.local` (AI mode only needs `NEBIUS_API_KEY`, which you obtain from the Nebius Token Factory console; the key is read server-side and never committed), `pnpm dev`, open `http://localhost:3000`, pick a scenario, choose a mode, press **Run comparison**. Full instructions: `README.md` (fresh-clone setup for Windows, macOS, and Linux).
 
 ## Technology
 
