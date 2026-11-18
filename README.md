@@ -4,7 +4,7 @@
 
 ChoiceMirror is an AI-powered behavioural UX auditor for **SLAY HACKS 2026**. It compares opposing user journeys on the same interface—such as **join vs leave** or **accept vs reject**—and is designed to show measurable friction with inspectable browser evidence.
 
-> **Current status:** Phase 4 is implemented. The repository runs two local applications, four controlled benchmark fixtures, and a Playwright runner with two execution modes: the deterministic runner (default) executes both opposing goals of any scenario from equivalent starting conditions, and the optional **AI (Nebius)** mode lets a real model observe each page and choose the next validated action. Structured evidence — ordered events, action counts, screenshots, and model-reported decisions with token usage — is stored locally. The comparison dashboard derives deterministic metrics and one evidence-linked finding from that stored evidence: a headline finding you can open to its supporting events and screenshots, mirrored Goal A/B tracks, an evidence inspector, and a methodology panel. Phase 5 (validation and submission) remains.
+> **Current status:** Phase 5 validated with live inference (2026-11-18). The repository runs two local applications, four controlled benchmark fixtures, and a Playwright runner with two execution modes: the deterministic runner (default) executes both opposing goals of any scenario from equivalent starting conditions, and the optional **AI (Nebius)** mode lets a real model observe each page and choose the next validated action. Structured evidence — ordered events, action counts, screenshots, and model-reported decisions with token usage — is stored locally. The comparison dashboard derives deterministic metrics and one evidence-linked finding from that stored evidence: a headline finding you can open to its supporting events and screenshots, mirrored Goal A/B tracks, an evidence inspector, and a methodology panel. Phase 5 validation against the real Nebius API is complete: the eight-journey live evaluation finished **8/8** (20 inference calls, 13,590 tokens, 0 errors), the bounded live-repeatability sweep finished **12/12 pairs / 24 journeys** with zero round-over-round action-count drift, UI/UX validation passed **22/22** checks on the real running app, and the security & reliability audit verified **30/30** spec bullets with zero defects (212 unit tests in 31 files, 52 Playwright tests). Submission materials — live test results, validation report, security review, demo script, Devpost draft and checklist, and seven provenance-backed screenshots — live under [`docs/submission/`](./docs/submission/). What remains is owner-only: eligibility/team registration, rubric verification with the organizers, and final submission approval (see `docs/submission/SUBMISSION_CHECKLIST.md`).
 
 ## What works now
 
@@ -17,7 +17,7 @@ ChoiceMirror is an AI-powered behavioural UX auditor for **SLAY HACKS 2026**. It
 - Optional **AI (Nebius)** mode: the model observes each page and proposes the next action, which passes Zod schema validation and a policy gate before it can reach the browser; AI runs show a `Mode: AI · <model>` badge, per-event proposed/validated action chips with model-reported justification, and inference-call/token counters. Unconfigured AI runs fail with the server's explicit reason — never a silent fallback.
 - Manual completion and deterministic reset for every goal.
 - Honest loading, empty, error, and unavailable states.
-- Automated tests: **205 unit tests (30 files)** and **49 Playwright tests** covering contracts and APIs, the metrics/findings engine with evidence-reference validation, WCAG AA contrast, all eight goal paths, keyboard activation, reset, 404s, external-request blocking, full paired browser runs, the AI loop against a local mock model (plan-leak canaries, controlled prompt injection, blocked origin), AI-mode UI evidence, dashboard states and responsive layout, and three-run repeatability per goal path.
+- Automated tests: **212 unit tests (31 files)** and **52 Playwright tests** covering contracts and APIs, the metrics/findings engine with evidence-reference validation, WCAG AA contrast, all eight goal paths, keyboard activation, reset, 404s, external-request blocking, full paired browser runs, the AI loop against a local mock model (plan-leak canaries, controlled prompt injection, blocked origin), AI-mode UI evidence, dashboard states and responsive layout, and three-run repeatability per goal path.
 
 ## Local setup
 
@@ -33,7 +33,7 @@ From a fresh clone on Windows (PowerShell):
 npm install --global pnpm@12.18.0
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
-copy .env.example .env.local
+Copy-Item .env.example apps/web/.env.local
 pnpm dev
 ```
 
@@ -43,7 +43,7 @@ From a fresh clone on macOS or Linux:
 npm install --global pnpm@12.18.0
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
-cp .env.example .env.local
+cp .env.example apps/web/.env.local
 pnpm dev
 ```
 
@@ -87,11 +87,12 @@ pnpm build
 `pnpm test:e2e` runs the full mocked suite: the AI tests point the production client at a local mock model on port 3099, so no key and no credits are needed. Live inference is opt-in and never part of `test:e2e` or CI:
 
 ```powershell
-$env:NEBIUS_LIVE = "1"   # plus NEBIUS_API_KEY in the environment
+$env:NEBIUS_LIVE = "1"          # plus NEBIUS_API_KEY in the process environment
+$env:NEBIUS_API_KEY = "…"       # from the Nebius Token Factory console — never committed
 pnpm test:live
 ```
 
-`pnpm test:live` runs all eight journeys against the real Nebius API and prints a JSON summary (success rate, tokens, inference calls, latency) from those real results only. Without both `NEBIUS_LIVE=1` and `NEBIUS_API_KEY` it reports `1 skipped` and spends nothing.
+`pnpm test:live` runs all eight journeys against the real Nebius API and prints a JSON summary (success rate, tokens, inference calls, latency) from those real results only. The key must be present in the **process environment** — `apps/web/.env.local` is read by the dev server only, not by the Playwright process. Without both `NEBIUS_LIVE=1` and `NEBIUS_API_KEY` it reports `1 skipped` and spends nothing. A separate bounded repeatability suite (`tests/live/repeatability.spec.ts`, 4 scenarios × 1 pair × 3 rounds = 12 pairs / 24 journeys) requires `NEBIUS_LIVE_REPEAT=1` in addition — when the repeat flag is not exported, a `pnpm test:live` sweep spends no repeatability credits. Last live run (2026-11-18): 8/8 journeys, 20 inference calls, 13,590 tokens, 0 errors; repeatability 12/12 pairs / 24 journeys with zero action-count drift. Full evidence: [`docs/submission/LIVE_TEST_RESULTS.md`](./docs/submission/LIVE_TEST_RESULTS.md).
 
 ### Running a comparison
 
@@ -138,9 +139,9 @@ docs/
 - AI mode is optional and bounded: without `NEBIUS_API_KEY` only the deterministic runner is used, AI runs fail explicitly rather than falling back silently, and AI actions are limited to `click`/`stop` with 12 decisions, 6 rejections, and 50k tokens per journey.
 - AI navigation runs only against the four controlled fixtures — no third-party sites, accounts, or real actions.
 - Model-provided justifications are *model-reported*, not independently verified evidence; completion is always determined by the app, never by the model.
-- Live AI results depend on real API credits; committed verification is offline against a local mock model (`pnpm test:e2e`), and `pnpm test:live` is the opt-in real check — last run 2026-11-16: **8/8 journeys completed** against the real Nebius API (0 errors, 20 inference calls).
+- Live AI results depend on real API credits; committed verification is offline against a local mock model (`pnpm test:e2e`), and `pnpm test:live` is the opt-in real check — last run 2026-11-18: **8/8 journeys completed** against the real Nebius API (0 errors, 20 inference calls, 13,590 tokens).
 - Metrics are descriptive and deterministic: one run per comparison, no confidence intervals; backtracking, interruptions, and human takeover are not captured by the trace format (reported as not captured, never as `0`), and no legal or manipulation verdicts are made.
-- Repeatability evidence covers the deterministic runner (3 runs × 2 goals × 4 fixtures, zero action-count variance); live-model repeat runs were not performed in Phase 4 — AI-path E2E coverage uses a local mock model and is never presented as real-model performance.
+- Repeatability evidence covers the deterministic runner (3 runs × 2 goals × 4 fixtures, zero action-count variance) **and**, since 2026-11-18, the live model: a bounded opt-in sweep of 12 paired records (24 journeys, 3 rounds) completed with every scenario × goal combination producing an identical action count round over round and `errors: []` — evidence in `docs/submission/LIVE_TEST_RESULTS.md` §6. Live repeatability was evaluated within the available credit budget (one sweep; no confidence intervals).
 - No third-party websites are visited; runs open only the local benchmark origin.
 - No accounts, payments, real consent changes, personal data, or consequential submissions occur.
 - The benchmark uses synthetic local state only.
@@ -149,7 +150,7 @@ docs/
 
 ## Planned delivery
 
-The detailed milestone plan is in [Phases.md](./docs/Phases.md). Phase 2 added deterministic Playwright execution and stored, inspectable evidence; Phase 3 added opt-in AI navigation with policy-gated model decisions and labelled AI evidence; Phase 4 added the deterministic metrics engine, evidence-linked findings, and the mirrored dashboard with evidence inspector. Phase 5 covers validation, demo materials, and submission.
+The detailed milestone plan is in [Phases.md](./docs/Phases.md). Phase 2 added deterministic Playwright execution and stored, inspectable evidence; Phase 3 added opt-in AI navigation with policy-gated model decisions and labelled AI evidence; Phase 4 added the deterministic metrics engine, evidence-linked findings, and the mirrored dashboard with evidence inspector; **Phase 5 (validation and submission) is validated as of 2026-11-18** — live inference results, the UI/UX validation report, the security & reliability audit, the demo script, the Devpost draft and checklist, and seven provenance-backed screenshots all live under [`docs/submission/`](./docs/submission/). Submission itself awaits the owner actions in `SUBMISSION_CHECKLIST.md`.
 
 ## Design and requirements
 

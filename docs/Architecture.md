@@ -1,6 +1,6 @@
 # ChoiceMirror — Architecture
 
-**Version:** 0.4 · **Status:** Phase 4 implemented (pure metrics engine, evidence-linked findings, mirrored dashboard with evidence inspector and methodology panel); Phase 5 (validation and submission) remains
+**Version:** 0.5 · **Status:** Phase 5 validated with live inference (2026-11-18): live evaluation 8/8 journeys, live repeatability 12/12 pairs (D-033), UI/UX validation 22/22 PASS, security audit 30/30 VERIFIED; submission materials under `docs/submission/` — submission awaits owner approval
 
 ## Architectural principle
 Keep the **AI navigation policy**, **browser actuator**, **deterministic event capture**, and **evaluation/reporting** as independently testable modules. Build the smallest deployable system that can show an honest, repeatable paired test.
@@ -53,6 +53,7 @@ flowchart LR
 - **Limits and budgets:** 12 decisions and 6 rejected proposals per journey, 50k tokens per journey, 2048 output tokens per call (raised from the planned 300 after live evidence: the reasoning model needs >1200 reasoning tokens before emitting its action), temperature 0; journeys stay bounded by the existing action/step/journey limits and always release the browser.
 - **Evidence:** `comparison.mode` (`deterministic` | `ai`; optional so Phase 2 records stay valid), a per-journey `ai` block (provider, model, prompt version, inference-call count, input/output tokens, rejected proposals, model errors) and a per-event `ai` block (observation reference, proposed action, validation result, model-reported justification, outcome, usage, latency). Model statements are rendered as *model-reported*, never as verified fact.
 - **Live evaluation:** `pnpm test:live` (`playwright.live.config.ts` + `tests/live/ai-eval.spec.ts`) runs all eight journeys against the real API only when `NEBIUS_LIVE=1` and `NEBIUS_API_KEY` are both set; `test:e2e` and CI stay credential-free against the local mock model on port 3099.
+- **Live repeatability (Phase 5):** `tests/live/repeatability.spec.ts` (4 scenarios × 1 pair × 3 rounds = 12 pairs / 24 journeys) adds a second opt-in flag — it runs only when `NEBIUS_LIVE=1` **and** `NEBIUS_LIVE_REPEAT=1` **and** `NEBIUS_API_KEY` are all set, so a plain `pnpm test:live` sweep spends no repeatability credits when the repeat flag is not exported (D-033).
 
 ## Metrics, findings and dashboard data flow (Phase 4 as shipped)
 `packages/metrics` is a **pure** package: no I/O, no persistence, no clock reads (durations parse stored timestamps), no model call. A function-per-stage pipeline composes the report:
