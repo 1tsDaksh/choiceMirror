@@ -5,7 +5,6 @@ on:
     paths:
       - ".github/workflows/demo-video.yml"
       - "scripts/record-demo.mjs"
-      - "scripts/narration-*.txt"
   workflow_dispatch:
     inputs:
       mode:
@@ -43,7 +42,7 @@ jobs:
         run: |
           pnpm exec playwright install --with-deps chromium
           sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb openbox ffmpeg espeak-ng
+          sudo apt-get install -y -qq xvfb openbox ffmpeg
       - name: Guard live AI credentials without printing them
         shell: bash
         run: |
@@ -83,25 +82,25 @@ jobs:
             exit 1
           fi
           node scripts/record-demo.mjs
-      - name: Add spoken narration to the actual screen recording
-        shell: bash
-        run: |
-          set -euo pipefail
-          espeak-ng -v en-gb -s 145 -f "scripts/narration-${DEMO_MODE}.txt" -w demo/voice.wav
-          ffmpeg -hide_banner -loglevel error -y \
-            -i "demo/choicemirror-${DEMO_MODE}-screen.mp4" -i demo/voice.wav \
-            -filter_complex "[1:a]apad[aud]" -map 0:v:0 -map "[aud]" \
-            -c:v copy -c:a aac -b:a 128k -shortest \
-            -movflags +faststart "demo/choicemirror-${DEMO_MODE}-narrated.mp4"
       - name: Validate playable duration and real changing video frames
         shell: bash
         run: |
           python3 - <<'PY'
           import glob, hashlib, json, statistics, subprocess
-          clips = glob.glob("demo/*-screen.mp4") + glob.glob("demo/*-narrated.mp4")
-          if len(clips) != 2:
-              raise SystemExit("Missing the raw or narrated MP4")
+          clips = glob.glob("demo/*-screen.mp4")
+          if len(clips) != 1:
+              raise SystemExit("Missing the real silent MP4")
+          for name in glob.glob("demo/*-timestamped-transcript.md") + glob.glob("demo/*-optional-subtitles.srt"):
+              if not open(name, encoding="utf8").read().strip():
+                  raise SystemExit("Empty timestamped transcript file")
+          if len(glob.glob("demo/*-timestamped-transcript.md")) != 1 or len(glob.glob("demo/*-optional-subtitles.srt")) != 1:
+              raise SystemExit("Missing transcript or optional SRT")
           for path in clips:
+              streams = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                  "stream=codec_type", "-of", "csv=p=0", path],
+                  capture_output=True, text=True, check=True).stdout.splitlines()
+              if "video" not in streams or "audio" in streams:
+                  raise SystemExit("Recording must contain video, and absolutely no audio stream")
               probe = subprocess.run(
                   ["ffprobe", "-v", "error", "-show_entries", "format=duration",
                    "-of", "json", path],
@@ -124,13 +123,15 @@ jobs:
                   raise SystemExit("Video is frozen; refused to deliver")
               print(f"VERIFIED: {path}, duration={duration:.1f}s, 4 nonblank samples, {len(set(samples))} distinct frames")
           PY
-      - name: Upload actual MP4 videos, screenshot and run metadata
+      - name: Upload SILENT MP4, timestamped transcript, optional SRT and run evidence
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: choicemirror-${{ env.DEMO_MODE }}-video-${{ github.run_number }}
           path: |
-            demo/*.mp4
+            demo/*-screen.mp4
+            demo/*-timestamped-transcript.md
+            demo/*-optional-subtitles.srt
             demo/*-verification.png
             demo/*-runs.json
           if-no-files-found: warn
