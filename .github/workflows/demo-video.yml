@@ -34,7 +34,6 @@ jobs:
     env:
       # PR previews NEVER receive secrets. Only trusted main push with explicit marker or manual dispatch can spend credits.
       DEMO_MODE: ${{ github.event_name == 'pull_request' && 'deterministic' || github.event_name == 'push' && 'ai' || inputs.mode }}
-      NEBIUS_API_KEY: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && secrets.NEBIUS_API_KEY || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -53,6 +52,8 @@ jobs:
           sudo apt-get install -y -qq xvfb openbox ffmpeg
       - name: Guard live AI credentials without printing them
         shell: bash
+        env:
+          NEBIUS_API_KEY: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && secrets.NEBIUS_API_KEY || '' }}
         run: |
           if [[ "$DEMO_MODE" == "ai" && -z "$NEBIUS_API_KEY" ]]; then
             echo "::error::To create the live AI video, set a fresh NEBIUS_API_KEY in GitHub repository Settings > Secrets and variables > Actions. Do not paste the key into an issue or PR."
@@ -61,6 +62,8 @@ jobs:
           echo "Recording mode: $DEMO_MODE"
       - name: Record real headed browser interaction through FFmpeg X11 capture
         shell: bash
+        env:
+          NEBIUS_API_KEY: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && secrets.NEBIUS_API_KEY || '' }}
         run: |
           set -euo pipefail
           export DISPLAY=:99
