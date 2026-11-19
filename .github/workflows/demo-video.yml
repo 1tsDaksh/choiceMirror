@@ -27,12 +27,14 @@ permissions:
 
 jobs:
   desktop-video:
+    # PRs are secret-free previews; credentialed runs are allowed only on trusted main.
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
       # PR previews NEVER receive secrets. Only trusted main push with explicit marker or manual dispatch can spend credits.
       DEMO_MODE: ${{ github.event_name == 'pull_request' && 'deterministic' || github.event_name == 'push' && 'ai' || inputs.mode }}
-      NEBIUS_API_KEY: ${{ github.event_name != 'pull_request' && secrets.NEBIUS_API_KEY || '' }}
+      NEBIUS_API_KEY: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && secrets.NEBIUS_API_KEY || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
