@@ -1,0 +1,6 @@
+ChoiceMirror silent real-AI demo recording request
+Date: 2026-11-19
+Mode: ai (genuine Nebius Token Factory via protected GitHub Actions secret)
+Requested after project owner confirmed secure repository secret NEBIUS_API_KEY is configured.
+Capture: actual headed Chromium user interface; no narration or audio; separate timestamped Markdown guide and SRT; validate both stored AI journeys and recording integrity.
+No secret content is stored here. No external publication or Devpost submission is authorised by this recording request.
