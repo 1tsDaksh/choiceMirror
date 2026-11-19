@@ -144,7 +144,9 @@ async function playComparison(page, label) {
   }
   mark("RESULTS", "Goal A: " + detail.journeys[0].actionCount + " · Goal B: " + detail.journeys[1].actionCount + " actions",
     "Both journeys actually completed. Goal A required " + detail.journeys[0].actionCount +
-      " recorded actions and Goal B required " + detail.journeys[1].actionCount +
+      " recorded " + (detail.journeys[0].actionCount === 1 ? "action" : "actions") +
+      " and Goal B required " + detail.journeys[1].actionCount +
+      " " + (detail.journeys[1].actionCount === 1 ? "action" : "actions") +
       ". The measured difference is " + Math.abs(detail.journeys[0].actionCount - detail.journeys[1].actionCount) +
       " actions on this controlled benchmark.");
   records.push({
