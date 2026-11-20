@@ -10,6 +10,15 @@ I maintain this repository at [@1tsDaksh](https://github.com/1tsDaksh). The demo
 
 > **Scope:** The current product evaluates four deliberately designed **synthetic benchmark scenarios**, not arbitrary websites. Differences in action counts do not establish intent, illegal conduct, or accessibility compliance.
 
+## Screenshots
+
+![Completed ChoiceMirror AI comparison: Join took one recorded action and Leave took three, with linked evidence](docs/submission/assets/03-comparison-asymmetric.png)
+
+*Actual Nebius AI run on the membership-asymmetric synthetic benchmark. View the [screenshot provenance](docs/submission/assets/PROVENANCE.md).*
+
+| Balanced control — equal action counts | Real browser step evidence |
+| :---: | :---: |
+| ![Balanced membership comparison, Join 1 and Leave 1](docs/submission/assets/04-comparison-balanced.png) | ![Step-level screenshot evidence inspector](docs/submission/assets/06-evidence-inspector.png) |
 ## Try the live demo
 
 1. Open [ChoiceMirror](https://choicemirror-production.up.railway.app).
