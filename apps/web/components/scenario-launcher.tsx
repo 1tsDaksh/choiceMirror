@@ -39,6 +39,7 @@ const MODE_OPTIONS: {
 
 type ScenarioLauncherProps = {
   initialScenarios: Scenario[];
+  publicDemo?: boolean;
 };
 
 function benchmarkUrl(path: string): string {
@@ -59,6 +60,7 @@ function benchmarkUrl(path: string): string {
 
 export function ScenarioLauncher({
   initialScenarios,
+  publicDemo = false,
 }: ScenarioLauncherProps) {
   const router = useRouter();
   const [state, setState] = useState<LauncherState>(() =>
@@ -69,7 +71,9 @@ export function ScenarioLauncher({
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(
     null,
   );
-  const [mode, setMode] = useState<ExecutionMode>("deterministic");
+  const [mode, setMode] = useState<ExecutionMode>(
+    publicDemo ? "ai" : "deterministic",
+  );
   const [runState, setRunState] = useState<RunState>({ status: "idle" });
 
   const retryScenarios = () => {
@@ -183,9 +187,13 @@ export function ScenarioLauncher({
       }
 
       if (response.status === 429) {
+        const details = (await response.json().catch(() => null)) as {
+          error?: unknown;
+        } | null;
         setRunState({
           status: "error",
-          message: "Another comparison is still running. Wait for it to finish.",
+          message: typeof details?.error === "string" ? details.error :
+            "Another comparison is still running. Try again later.",
         });
         return;
       }
@@ -345,14 +353,14 @@ export function ScenarioLauncher({
               >
                 {runState.status === "starting"
                   ? "Starting run…"
-                  : "Run comparison"}
+                  : publicDemo && mode === "ai" ? "Run live Nebius comparison" : "Run comparison"}
               </button>
-              <a
+              {!publicDemo ? <a
                 href={benchmarkUrl(selectedScenario.benchmarkPath)}
                 className="inline-flex min-h-12 items-center justify-center rounded-xl border border-highlight px-5 font-semibold text-highlight hover:bg-highlight/10"
               >
                 Explore manually in benchmark →
-              </a>
+              </a> : null}
             </div>
             {runState.status === "error" ? (
               <p
@@ -364,7 +372,9 @@ export function ScenarioLauncher({
             ) : null}
             <p className="text-sm text-secondary-text">
               {mode === "ai"
-                ? "AI mode lets the Nebius model observe each page and choose the next validated action. Runs execute locally with fixed limits."
+                ? publicDemo
+                  ? "Real Nebius model calls run on our server; your browser never receives the API key. Daily quotas protect limited credits. The controlled benchmark runs on an isolated internal service."
+                  : "AI mode lets the Nebius model observe each page and choose the next validated action. Runs execute locally with fixed limits."
                 : "Runs execute locally against the benchmark app with fixed limits."}
             </p>
           </div>
