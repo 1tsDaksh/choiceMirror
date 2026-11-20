@@ -7,13 +7,15 @@ const expectedGoals: Record<string, [string, string]> = {
   "membership-asymmetric": ["join", "leave"],
   "consent-balanced": ["accept", "reject"],
   "consent-asymmetric": ["accept", "reject"],
+  "membership-case-study": ["join", "leave"],
+  "membership-copy-variant": ["join", "leave"],
 };
 
 describe("scenario catalog", () => {
-  it("exposes four unique controlled scenarios", () => {
+  it("exposes six unique controlled scenarios", () => {
     const scenarios = catalog.scenarios ?? [];
 
-    expect(scenarios).toHaveLength(4);
+    expect(scenarios).toHaveLength(6);
     expect(new Set(scenarios.map((scenario) => scenario.id)).size).toBe(4);
   });
 
@@ -84,5 +86,13 @@ describe("scenario catalog", () => {
 
     expect(counts(membership)).toEqual({ join: 1, leave: 3 });
     expect(counts(consent)).toEqual({ accept: 1, reject: 3 });
+  });
+  it("keeps the case-study pair and copy-variation comparable", () => {
+    const original = catalog.getScenario("membership-case-study")!;
+    const variant = catalog.getScenario("membership-copy-variant")!;
+    expect(original.goals).toEqual(variant.goals);
+    expect(original.expectedActions).toEqual(variant.expectedActions);
+    expect(original.expectedActions.map((goal) => goal.count)).toEqual([1, 5]);
+    expect(original.benchmarkPath).not.toBe(variant.benchmarkPath);
   });
 });

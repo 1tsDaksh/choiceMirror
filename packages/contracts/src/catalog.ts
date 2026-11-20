@@ -101,6 +101,56 @@ export const scenarios: Scenario[] = [
       { goalId: "reject", count: 3 },
     ],
   },
+  {
+    id: "membership-case-study",
+    title: "Join vs cancel — documented-pattern case study",
+    description:
+      "Fictional OrbitPass membership. An evidence-informed retention journey inspired by historical FTC-described cancellation friction; not an Amazon UI reproduction.",
+    benchmarkPath: "/membership-case-study",
+    kind: "membership",
+    variant: "asymmetric",
+    goals: [
+      {
+        id: "join",
+        label: "Join",
+        description: "Start a fictional OrbitPass membership.",
+      },
+      {
+        id: "leave",
+        label: "Leave",
+        description: "Cancel a fictional OrbitPass membership.",
+      },
+    ],
+    expectedActions: [
+      { goalId: "join", count: 1 },
+      { goalId: "leave", count: 5 },
+    ],
+  },
+  {
+    id: "membership-copy-variant",
+    title: "Join vs cancel — reworded interface",
+    description:
+      "Same fictional tasks and five-step cancellation structure, but every action label is rewritten to test navigation robustness.",
+    benchmarkPath: "/membership-copy-variant",
+    kind: "membership",
+    variant: "asymmetric",
+    goals: [
+      {
+        id: "join",
+        label: "Join",
+        description: "Start a fictional OrbitPass membership.",
+      },
+      {
+        id: "leave",
+        label: "Leave",
+        description: "Cancel a fictional OrbitPass membership.",
+      },
+    ],
+    expectedActions: [
+      { goalId: "join", count: 1 },
+      { goalId: "leave", count: 5 },
+    ],
+  },
 ];
 
 export function getScenario(id: string): Scenario | undefined {

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getScenario } from "@choicemirror/contracts";
 
 import { ChoiceFlow } from "@/components/choice-flow";
+import { CaseStudyFlow } from "@/components/case-study-flow";
 
 type ScenarioPageProps = {
   params: Promise<{ scenarioId: string }>;
@@ -32,7 +33,12 @@ export default async function ScenarioPage({
     notFound();
   }
 
-  return (
-    <ChoiceFlow scenario={scenario} seed={readSeed(query.seed)} />
-  );
+  if (
+    scenario.id === "membership-case-study" ||
+    scenario.id === "membership-copy-variant"
+  ) {
+    return <CaseStudyFlow scenario={scenario} seed={readSeed(query.seed)} />;
+  }
+
+  return <ChoiceFlow scenario={scenario} seed={readSeed(query.seed)} />;
 }

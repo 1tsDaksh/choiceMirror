@@ -5,6 +5,8 @@ export const scenarioIdSchema = z.enum([
   "membership-asymmetric",
   "consent-balanced",
   "consent-asymmetric",
+  "membership-case-study",
+  "membership-copy-variant",
 ]);
 
 export const executionModeSchema = z.enum(["deterministic", "ai"]);
