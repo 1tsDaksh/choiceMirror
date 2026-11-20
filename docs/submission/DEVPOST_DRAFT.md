@@ -66,10 +66,10 @@ I also learned that a balanced result matters. A system that only reports proble
 
 ## What's next
 
-I would extend the controlled benchmark library, evaluate repeated runs with more robust uncertainty estimates, and explore permissioned use on staging websites. Future work could add subscriptions, trial cancellation and preference-management examples, along with evidence exports for UX research.
+I would extend the controlled benchmark library, evaluate repeated runs with more robust uncertainty estimates, and explore permissioned use on staging websites. Future work could add more cancellation and preference-management patterns, along with evidence exports for UX research.
 
 ## Responsible AI and limitations
 
-ChoiceMirror currently works on **four synthetic benchmark interfaces**. It does not audit external websites, take actions on real accounts, or determine whether a business is breaking any law. A single action-count difference is descriptive, **not proof of dark-pattern intent**. Model explanations are labelled as unverified, and latency is not confused with human UX burden. The published demo is intentionally bounded so external visitors cannot spend unlimited Nebius credits or submit arbitrary URLs.
+ChoiceMirror currently works on **six controlled synthetic scenarios**: four original benchmark interfaces and two OrbitPass variations. It does not audit external websites, take actions on real accounts, or determine whether a business is breaking any law. A single action-count difference is descriptive, **not proof of dark-pattern intent**. Model explanations are labelled as unverified, and latency is not confused with human UX burden. The published demo is intentionally bounded so external visitors cannot spend unlimited Nebius credits or submit arbitrary URLs.
 
 **Repository and verification:** [Source](https://github.com/1tsDaksh/choiceMirror) · [Real-model evaluation](LIVE_TEST_RESULTS.md) · [Security review](SECURITY_REVIEW.md) · [Screenshot provenance](assets/PROVENANCE.md).
