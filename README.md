@@ -8,7 +8,7 @@ ChoiceMirror is my evidence-first tool for comparing the friction on opposite si
 
 I maintain this repository at [@1tsDaksh](https://github.com/1tsDaksh). The demo is live on Railway; the source, tests and validation records are available here.
 
-> **Scope:** The current product evaluates four original synthetic scenarios plus two fictional, historically informed cancellation case studies—not arbitrary websites. Differences in action counts do not establish intent, illegal conduct, or accessibility compliance.
+> **Scope:** The current product evaluates four original synthetic scenarios plus two variations of one fictional, historically informed cancellation case study—not arbitrary websites. Differences in action counts do not establish intent, illegal conduct, or accessibility compliance.
 
 ## Screenshots
 
@@ -22,7 +22,7 @@ I maintain this repository at [@1tsDaksh](https://github.com/1tsDaksh). The demo
 ## Try the live demo
 
 1. Open [ChoiceMirror](https://choicemirror-production.up.railway.app).
-2. Select **Join vs leave — asymmetric** or **Accept vs reject — asymmetric**. Balanced versions are available as controls.
+2. Select **Join vs leave — asymmetric**, **Accept vs reject — asymmetric**, or one of the two **OrbitPass** cancellation layouts. Balanced versions are available as controls.
 3. Choose **AI (Nebius)** to let the model observe each benchmark page and propose the next action. The web server validates each proposal before Playwright can execute it.
 4. Inspect the comparison dashboard: action counts, mirrored journey timelines, screenshots, model-reported decisions and the methodology behind the finding.
 
@@ -143,7 +143,7 @@ The ratio uses `(max(actionsA, actionsB) + 1) / (min(actionsA, actionsB) + 1)`. 
 
 ## Limitations and responsible use
 
-- Current results apply only to **four synthetic benchmarks** with controlled starting conditions.
+- Current results apply only to **six controlled synthetic scenarios** (four original benchmarks and two OrbitPass variations), not external production sites.
 - Each displayed comparison is one pair of journeys; historical repeatability tests do not establish statistical performance on unseen sites.
 - No third-party websites, accounts, payment transactions or consequential user data are involved.
 - Model proposals may be wrong; the browser policy, completed-state checks and deterministic metrics provide independent constraints.
