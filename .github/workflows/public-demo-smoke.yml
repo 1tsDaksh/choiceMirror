@@ -1,0 +1,72 @@
+name: Public demo Docker smoke
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "railway.json"
+      - "scripts/start-public-demo.mjs"
+      - "apps/web/**"
+      - "apps/benchmark/**"
+      - "packages/**"
+      - ".github/workflows/public-demo-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  container-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build actual Railway Docker image including Chromium
+        run: docker build --progress=plain -t choicemirror-public-smoke .
+      - name: Run isolated app + benchmark and verify a real browser journey
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name choicemirror-public-test -p 3000:3000 \
+            -e PUBLIC_DEMO_ENABLED=0 -e PORT=3000 \
+            choicemirror-public-smoke
+          trap 'docker logs choicemirror-public-test || true; docker rm -f choicemirror-public-test || true' EXIT
+          ready=false
+          for i in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3000/api/health > /tmp/cm-health.json; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != true ]; then
+            echo "::error::Docker container was not healthy."
+            exit 1
+          fi
+          cat /tmp/cm-health.json
+          curl -fsS -X POST "http://127.0.0.1:3000/api/comparisons" \
+            -H "content-type: application/json" \
+            -d '{"scenarioId":"membership-balanced","goalIds":["join","leave"],"mode":"deterministic"}' \
+            > /tmp/cm-result.json
+          cmpid=$(node -e 'const x=require("/tmp/cm-result.json"); if (!/^cmp_[a-f0-9]{16}$/.test(x.comparisonId)) process.exit(1); process.stdout.write(x.comparisonId)')
+          echo "Comparison started: $cmpid"
+          done_run=false
+          for i in $(seq 1 120); do
+            status=$(curl -fsS "http://127.0.0.1:3000/api/comparisons/$cmpid" | \
+              node -e 'let s=""; process.stdin.on("data", x=>s+=x).on("end",()=>{const d=JSON.parse(s); console.log(d.comparison.status)})')
+            if [ "$status" = completed ]; then
+              done_run=true
+              break
+            fi
+            if [ "$status" = failed ]; then
+              echo "::error::Deterministic comparison failed in Docker."
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$done_run" != true ]; then
+            echo "::error::Docker comparison did not complete."
+            exit 1
+          fi
+          echo "Verified real local Playwright comparison on packaged Railway image."
