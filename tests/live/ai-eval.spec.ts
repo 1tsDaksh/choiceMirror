@@ -57,7 +57,15 @@ test.describe("live nebius evaluation", () => {
     const config = nebiusConfigFromEnv();
     expect(config, "NEBIUS_API_KEY must be configured").not.toBeNull();
 
-    for (const scenario of scenarios) {
+    // Preserve the original eight-journey evaluation and its credit budget.
+// Additional case studies use a separately gated spec.
+    const originalScenarioIds = new Set([
+      "membership-balanced",
+      "membership-asymmetric",
+      "consent-balanced",
+      "consent-asymmetric",
+    ]);
+    for (const scenario of scenarios.filter((item) => originalScenarioIds.has(item.id))) {
       for (const goal of scenario.goals) {
         const expected = scenario.expectedActions.find(
           (entry) => entry.goalId === goal.id,

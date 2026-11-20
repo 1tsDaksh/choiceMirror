@@ -62,6 +62,38 @@ const flows: Record<Scenario["id"], FlowDefinition> = {
       ],
     },
   },
+  "membership-case-study": {
+    scenarioId: "membership-case-study",
+    startTitle: "Choose your OrbitPass membership action",
+    startDescription:
+      "A fictional streaming membership with equivalent starting conditions for both goals. No payment or account changes happen.",
+    goals: {
+      join: ["Activate OrbitPass membership"],
+      leave: [
+        "Review membership details",
+        "Continue towards cancellation",
+        "Decline discounted extension",
+        "Skip feedback and continue",
+        "Confirm subscription cancellation",
+      ],
+    },
+  },
+  "membership-copy-variant": {
+    scenarioId: "membership-copy-variant",
+    startTitle: "Choose your OrbitPass membership action",
+    startDescription:
+      "The same fictional membership and goals, with deliberately reworded buttons and layouts. No real account changes happen.",
+    goals: {
+      join: ["Start my OrbitPass plan"],
+      leave: [
+        "View account options",
+        "Proceed to end membership",
+        "No thanks, continue ending plan",
+        "Continue without answering survey",
+        "Finish ending my subscription",
+      ],
+    },
+  },
 };
 
 export function getFlow(scenarioId: string): FlowDefinition | undefined {

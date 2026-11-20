@@ -34,7 +34,7 @@ Railway provides `RAILWAY_VOLUME_MOUNT_PATH` when the volume is correctly attach
 
 ## Running and observing
 
-1. Open the public domain and select one of the four controlled scenarios; no arbitrary URLs or custom prompts are supported.
+1. Open the public domain and select one of the catalogued controlled scenarios; no arbitrary URLs or custom prompts are supported.
 2. Start a comparison in AI mode. HTTP 202 confirms it was accepted, **not** that it completed. Follow the comparison detail page until both journeys are complete.
 3. Confirm `comparison.mode: "ai"`, two completed journey records and positive `journey.ai.inferenceCalls` for each journey. Verify linked PNG screenshots.
 4. Check Railway's runtime and HTTP logs for failures or 429 quota responses; monitor Nebius credits and Railway resource usage.

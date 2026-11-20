@@ -20,6 +20,8 @@ ChoiceMirror compares opposite journeys on **controlled synthetic interfaces**, 
 | Membership | Join 1 / Leave 1 | Join 1 / Leave 3 |
 | Consent | Accept 1 / Reject 1 | Accept 1 / Reject 3 |
 
+Two additional fictional membership scenarios are available: membership-case-study and membership-copy-variant. Each preserves the same Join/Cancel goals and the expected one versus five action structure, while the latter changes button wording. The original four remain the baseline evaluation.
+
 The benchmark expectations are known; AI-mode counts are recorded independently from browser traces, never taken from those expectations.
 
 ## Target use cases

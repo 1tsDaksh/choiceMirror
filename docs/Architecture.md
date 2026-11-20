@@ -27,7 +27,7 @@ The comparison API accepts only scenario identifiers and ordered goals from the 
 | Component | Source | Responsibility |
 | --- | --- | --- |
 | Web app | `apps/web` | Scenario launcher, APIs, public guardrails and comparison dashboard |
-| Synthetic benchmark | `apps/benchmark` | Balanced/asymmetric membership and consent fixtures |
+| Synthetic benchmark | `apps/benchmark` | Balanced/asymmetric membership and consent fixtures and a historical-pattern fictional membership case study |
 | Contracts | `packages/contracts` | Scenario IDs, Zod schemas, action policy and typed trace evidence |
 | Nebius adapter | `packages/agent` | Versioned prompt, bounded provider calls, structured action parsing |
 | Browser runner | `packages/browser-runner` | Isolated Playwright sessions, allowed-origin requests and event/screenshot capture |

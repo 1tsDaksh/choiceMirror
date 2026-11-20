@@ -24,11 +24,11 @@ async function waitForTerminalComparison(
   throw new Error(`comparison ${comparisonId} did not finish within 60s`);
 }
 
-test("all four scenarios complete both goals with documented counts", async ({
+test("all six scenarios complete both goals with documented counts", async ({
   request,
 }) => {
   // Four real browser comparisons run sequentially here.
-  test.setTimeout(120_000);
+  test.setTimeout(240_000);
 
   for (const scenario of scenarios) {
     const start = await request.post("/api/comparisons", {

@@ -104,4 +104,16 @@ describe("benchmark flow definitions", () => {
       }
     }
   });
+  it("preserves task semantics while changing every case-study action label", () => {
+    const original = getFlow("membership-case-study")!;
+    const variant = getFlow("membership-copy-variant")!;
+    expect(original.goals.join).toHaveLength(1);
+    expect(original.goals.leave).toHaveLength(5);
+    expect(variant.goals.join).toHaveLength(1);
+    expect(variant.goals.leave).toHaveLength(5);
+    expect(original.goals.join![0]).not.toEqual(variant.goals.join![0]);
+    for (const [index, action] of original.goals.leave!.entries()) {
+      expect(action).not.toEqual(variant.goals.leave![index]);
+    }
+  });
 });

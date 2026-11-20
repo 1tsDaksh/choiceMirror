@@ -52,7 +52,7 @@ type SweepEntry = {
   result: Awaited<ReturnType<typeof runAiJourney>>;
 };
 
-/** Runs all 8 catalog journeys against the real driver + mock model. */
+/** Runs every catalog journey against the real driver + mock model. */
 async function sweepAllJourneys(): Promise<SweepEntry[]> {
   const entries: SweepEntry[] = [];
   for (const scenario of scenarios) {
@@ -92,8 +92,8 @@ test.beforeEach(async () => {
   await resetMock();
 });
 
-test("ai journeys complete all four scenarios from live observations alone", async () => {
-  test.setTimeout(240_000);
+test("mock-model journeys complete all six scenarios from live observations alone", async () => {
+  test.setTimeout(300_000);
 
   const entries = await sweepAllJourneys();
 
