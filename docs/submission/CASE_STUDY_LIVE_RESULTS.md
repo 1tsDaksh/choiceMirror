@@ -7,7 +7,7 @@
 **Evidence ZIP:** [Artifact #14678592656](https://github.com/1tsDaksh/choiceMirror/actions/runs/44837025110/artifacts/14678592656), **30-day retention through 20 December 2026**  
 **ZIP SHA-256:** `07fdcb7867af29b5e0b89a128ce506bc60faaa5549795d620d552296ee3a2485`
 
-The report is transcribed from the **actual uploaded results.json** and independently checked against the 24 PNG files in the Actions artifact. All 24 PNG files matched their individual stored SHA-256 digests. The secret was neither accessed nor stored in the evidence.
+The report is transcribed from the **actual uploaded results.json** and independently checked against the 24 PNG files in the Actions artifact. All 24 PNG files matched their individual stored SHA-256 digests. The private key was used by the trusted runner for authentication but its value was not included in the evidence files.
 
 ## Per-journey results
 
