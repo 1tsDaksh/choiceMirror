@@ -245,4 +245,47 @@ describe("POST /api/comparisons", () => {
       }),
     );
   });
+
+  it("disables execution on Railway when public mode is switched off", async () => {
+    vi.stubEnv("RAILWAY_PROJECT_ID", "railway-test-project");
+    vi.stubEnv("PUBLIC_DEMO_ENABLED", "0");
+    const response = await POST(comparisonRequest(validBody));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: "Public execution is temporarily disabled.",
+    });
+    expect(mocks.startComparisonRun).not.toHaveBeenCalled();
+    expect(mocks.saveComparison).not.toHaveBeenCalled();
+  });
+
+  it("rejects cross-origin, absent-origin and oversized public requests", async () => {
+    vi.stubEnv("PUBLIC_DEMO_ENABLED", "1");
+    const foreign = new Request("https://demo.example/api/comparisons", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "origin": "https://malicious.example",
+      },
+      body: JSON.stringify(validBody),
+    });
+    expect((await POST(foreign)).status).toBe(403);
+    const missingOrigin = new Request("https://demo.example/api/comparisons", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(validBody),
+    });
+    expect((await POST(missingOrigin)).status).toBe(403);
+    const oversized = new Request("https://demo.example/api/comparisons", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "origin": "https://demo.example",
+      },
+      body: JSON.stringify({ ...validBody, extra: "x".repeat(2500) }),
+    });
+    expect((await POST(oversized)).status).toBe(400);
+    expect(mocks.saveComparison).not.toHaveBeenCalled();
+    expect(mocks.startComparisonRun).not.toHaveBeenCalled();
+  });
+
 });
