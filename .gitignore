@@ -16,3 +16,7 @@ test-results/
 
 # Local comparison evidence written by the file-backed store.
 apps/web/data/
+
+# Next.js auto-generates per-app assistant instructions during development.
+/apps/web/AGENTS.md
+/apps/benchmark/AGENTS.md

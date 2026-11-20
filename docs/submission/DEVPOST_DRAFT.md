@@ -1,195 +1,73 @@
-# DEVPOST_DRAFT — ChoiceMirror (SLAY HACKS 2026)
+# ChoiceMirror — Devpost project description
 
-> **Status: DRAFT — ready to transfer into Devpost. Nothing has been submitted or
-> published**, and no platform has confirmed acceptance. Field structure follows spec §11.
-> Citations in `[brackets]` name the verified artefact behind each claim — they are
-> evidence references for the team, not text to paste into Devpost.
-> Prepared 2026-11-18 on branch `feat/phase-5-final-validation`.
+**Project:** ChoiceMirror  
+**Tagline:** See both sides of the click.  
+**Live demo:** https://choicemirror-production.up.railway.app  
+**Source:** https://github.com/1tsDaksh/choiceMirror  
+**Video:** Add the published final-video link here after editing and upload.
 
----
+## Inspiration
 
-## Project name
+When a website offers two opposite choices, it isn't always equally easy to take either path. Joining can take one click while leaving requires repeated confirmations. Accepting may be immediate while rejecting means navigating extra screens.
 
-**ChoiceMirror**
+I wanted a way to compare the two journeys **using evidence rather than opinions**. A screenshot of a difficult button tells only part of the story. A useful measurement has to attempt both goals from comparable starting conditions and retain what actually happened.
 
-## Tagline
+## What it does
 
-**See both sides of the click.**
+ChoiceMirror runs the two sides of a choice in controlled browser sessions and measures the recorded action burden.
 
-## Problem
+I created four synthetic scenarios: **membership** (join / leave) and **consent** (accept / reject), each with **balanced** and **asymmetric** versions. They give the tool a meaningful positive control: it should report equality when the paths are equal, rather than always manufacturing a finding.
 
-Every day we make opposing digital choices — join or leave, accept or reject — but the two
-sides of the same choice rarely cost the same effort. One direction is often a single
-click; the other is a gauntlet of confirmations, review steps, and re-prompts. Teams
-suspect this friction and regulators debate it, yet the evidence is usually anecdote:
-screenshots without provenance, opinions without measurement, or one-sided manual testing
-that never runs *both* directions under matched conditions. We needed a way to **measure**
-the asymmetry of opposing choices and keep the browser evidence behind every number, so a
-difference can be inspected rather than asserted.
+After both journeys finish, the comparison dashboard displays their action counts, difference, ratio, mirrored timelines and original screenshots. Every finding links back to the evidence used to calculate it. If a run is incomplete or corrupt, the system reports insufficient evidence rather than pretending the two sides were equally easy.
 
-## Solution
+**Try it:** https://choicemirror-production.up.railway.app. Select a scenario, choose **AI (Nebius)** and run the comparison. The public service includes daily usage limits to protect the model budget.
 
-ChoiceMirror is an AI-assisted behavioural UX auditor that executes **both sides of a
-choice** under matched conditions and links every reported difference to inspectable
-evidence. A user picks a scenario — for example *Join vs leave* — and an execution mode:
-the deterministic runner replays the app's validated action plan, or **AI (Nebius)** mode
-lets a real model (`zai-org/GLM-5.3-Flash`) observe each page and choose the next
-validated action. Both opposing goals run sequentially in controlled browsers against a
-synthetic local benchmark, and every run produces ordered trace events, accurate action
-counts, per-step screenshots, and model-reported decisions with token usage. A comparison
-dashboard then derives deterministic metrics — action counts, the difference, an action
-burden ratio — and exactly one evidence-linked finding you can open down to the supporting
-events and screenshots. When evidence is missing, failed, or mismatched, the tool says
-*inconclusive* — never a fake zero.
+## How I built it
 
-## How it works
+I structured ChoiceMirror as a TypeScript monorepo with Next.js and React for the interface, Playwright for browser execution, Zod for typed validation, and a separate pure metrics package.
 
-1. **Select a scenario and mode.** The launcher lists four controlled scenarios
-   (membership and consent, each in balanced and asymmetric variants) with their opposing
-   goals, plus the execution mode: Deterministic or AI (Nebius). `[VALIDATION_REPORT.md §8.1]`
-2. **Run both opposing goals.** A Playwright runner executes Goal A and Goal B
-   sequentially from equivalent starting conditions (matched seed), each in a fresh,
-   isolated browser context pinned to the benchmark origin by a fail-closed request-layer
-   allowlist. In AI mode the loop is: observe the page → the Nebius model proposes a
-   structured action → Zod schema validation and a policy gate check it → only then does
-   the runner execute the click. `[SECURITY_REVIEW.md — AI security & browser security rows; LIVE_TEST_RESULTS.md §4.1]`
-3. **Store the evidence.** Ordered trace events (goal selection never counts as an
-   action), successful-click action counts with step deduplication, and a real PNG
-   screenshot at each checkpoint are stored locally and served through Zod-validated APIs.
-   `[SECURITY_REVIEW.md — evidence integrity rows]`
-4. **Derive the comparison honestly.** A pure metrics engine computes per-journey counts
-   and paired comparison metrics, withholds any difference unless both journeys completed
-   under matching conditions, validates every finding's evidence references against the
-   stored detail, and degrades to a single "insufficient evidence" finding on corruption.
-   The dashboard shows the finding, mirrored Goal A/B tracks, a selectable evidence
-   inspector (screenshot, timestamp, outcome, model-reported justification), and a
-   methodology panel — with keyboard access, WCAG AA contrast, and honest states for
-   running, failed, corrupt, and mismatched-seed runs. `[VALIDATION_REPORT.md §8.2, §8.3]`
+The navigation model is **Nebius Token Factory's `zai-org/GLM-5.3-Flash`**. For each goal, it receives an observation of the current benchmark page and proposes a structured action. It **cannot directly control the browser**. Before execution, a fixed schema and policy gate verify that the proposed element exists, is allowed and belongs to the selected journey. Playwright then executes the validated click inside an isolated browser context.
 
-**To run it:** clone the repo, `pnpm install --frozen-lockfile`, `pnpm exec playwright install chromium`, copy `.env.example` to `apps/web/.env.local` (AI mode only needs `NEBIUS_API_KEY`, which you obtain from the Nebius Token Factory console; the key is read server-side and never committed), `pnpm dev`, open `http://localhost:3000`, pick a scenario, choose a mode, press **Run comparison**. Full instructions: `README.md` (fresh-clone setup for Windows, macOS, and Linux).
+I deliberately separate three things:
 
-## Technology
+1. **Observed evidence:** successful browser actions, trace events and PNG screenshots.
+2. **Calculated metrics:** step counts, differences and the action-burden ratio derived from the stored traces.
+3. **Model-reported output:** the AI's action proposal and brief justification, displayed as model-reported rather than verified fact.
 
-TypeScript, Next.js, React, Tailwind CSS, Playwright, Zod, Vitest, and the **Nebius Token Factory** API (model `zai-org/GLM-5.3-Flash`, OpenAI-compatible endpoint). Monorepo layout: `apps/web` (launcher, dashboard, API boundary), `apps/benchmark` (synthetic controlled fixtures), `packages/contracts` (Zod schemas + scenario catalog), `packages/browser-runner` (deterministic and AI executors), `packages/storage` (file-backed evidence store), `packages/agent` (Nebius adapter: config, constant versioned prompt, typed client with error taxonomy and token budgets), `packages/metrics` (pure metrics/findings/evidence validation). All third-party libraries are listed and attributable in `README.md`. `[README.md — Repository layout, External dependencies]`
+The live demo runs in a Docker-based Railway deployment. The public Next.js app connects to an internal benchmark bound to loopback; only the web app is exposed. The Nebius key remains a **private server-side variable**. A persistent volume stores records and screenshots, with a single-flight controller and daily usage quotas.
 
-## What makes it different
-
-Most "AI evaluates UX" demos produce a verdict: a model looks at a page and asserts an
-opinion. ChoiceMirror produces **measurement with provenance**. Rather than relying on
-screenshots or subjective AI judgments, it executes both choices and retains the browser
-evidence needed to evaluate each difference:
-
-- **The model proposes; it never acts alone and never grades itself.** Every proposal
-  passes schema + policy validation, executes through a hardened browser driver, and
-  completion is decided by the app's own page check — never by a model claim. Metrics are
-  computed deterministically from recorded events, so AI execution cost is reported
-  separately from interface friction. `[SECURITY_REVIEW.md — "Model-provided claims never become verified facts"]`
-- **Every number opens to its evidence.** The finding "Leaving required 2 more actions
-  than joining" resolves to Goal A · step 2 and Goal B · steps 2,3,4, each with its stored
-  screenshot and the model's justification (labelled *model-reported, not verified*).
-  `[VALIDATION_REPORT.md §8.2 D5–D6; assets/06-evidence-inspector.png]`
-- **Honesty is structural.** Failed, partial, corrupt, or mismatched-condition runs render
-  explicit inconclusive states and withhold the difference — there is no path by which bad
-  evidence yields a confident number. `[VALIDATION_REPORT.md §8.2 D9]`
-
-## Responsible AI
-
-- **Bounded autonomy.** AI actions are restricted to validated `click`/`stop` proposals on
-  controlled benchmark pages; invalid or out-of-policy proposals are rejected, and a
-  rejection budget stops runaway loops. Prompt injection cannot override the navigation
-  policy — the policy gate is code, not prompt, and a controlled injection test shows an
-  injected instruction reaching the model while the journey still fails honestly.
-  `[SECURITY_REVIEW.md — AI security rows]`
-- **Clear labelling.** AI runs carry a `Mode: AI · <model>` badge; model justifications
-  render as "MODEL-REPORTED (NOT VERIFIED)"; token/inference counts are presented as
-  execution cost, not a friction measure. `[VALIDATION_REPORT.md §8.2 D7]`
-- **No silent fallback.** Without credentials or on mid-run misconfiguration, an AI run
-  fails with the server's explicit reason — it never quietly becomes deterministic.
-  `[SECURITY_REVIEW.md — "Failures are not silently represented as success"]`
-- **Credential hygiene.** The API key lives only in a gitignored local env file, is read
-  server-side, never appears in client bundles or logs; the submission assets passed a
-  key/Bearer sweep. `[SECURITY_REVIEW.md — "API credentials stay server-side"; SUBMISSION_CHECKLIST.md §4]`
+**Technology:** TypeScript, Next.js, React, Tailwind CSS, Playwright Chromium, Zod, Vitest, Docker, Railway and Nebius Token Factory. Open-source dependencies and the external model are clearly identified in the repository.
 
 ## Challenges
 
-- **Model output reliability** — reasoning tokens count against the output cap, so a
-  too-small cap fails deterministically; we diagnosed a real truncation failure in live
-  testing, raised the cap, and pinned the behaviour with tests. `[docs/Memory.md — 2026-11-16 PR #4]`
-- **Secure browser execution** — fail-closed origin pinning, hop-by-hop redirect walks,
-  service-worker blocking, fresh isolated contexts, and guaranteed cleanup on every
-  failure path, all verified by dedicated probes. `[SECURITY_REVIEW.md — browser security rows, probes P2/P3]`
-- **Accurate evidence capture** — ensuring goal selection, backtracking, and duplicate or
-  non-click events can never inflate an action count, and that corrupt or partial records
-  degrade honestly instead of producing fake numbers. `[SECURITY_REVIEW.md — evidence integrity rows]`
-- **Fair comparison methodology** — comparative numbers appear only under matched
-  conditions (same seed, both completed), with observed vs calculated vs interpreted
-  values separated and limitations stated in the product itself. `[VALIDATION_REPORT.md §8.2 D8]`
+**Reliable model navigation.** The reasoning model could consume its response budget before producing a valid structured action. I investigated this in real inference runs, increased the response-token allowance and added tests to prevent silent truncation.
+
+**Safe browser execution.** The model must not turn a benchmark test into arbitrary web navigation. I constrained its actions to observed controls, pinned the browser to the internal benchmark origin, blocked service workers, validated redirect chains and tested prompt-injection and off-origin request cases.
+
+**Trustworthy measurements.** Selecting a goal is not the same as taking an action toward it. I kept action counting deterministic, linked metrics to stored event and screenshot IDs, and made incomplete or inconsistent evidence produce an inconclusive result.
+
+**Hosting a real browser.** The public app needs a long-running Node.js process and persistent files; it is not a static showcase. I deployed the web app, benchmark and Playwright runtime in one Railway service, with a private benchmark and limits that protect live inference credits.
 
 ## Accomplishments
 
-*(Implemented and verified features only; every claim cites its artefact.)*
+- **Real model-driven browser journeys.** The recorded Nebius walkthrough completed both sides of an asymmetric membership comparison in **1 versus 3 actions**, with **2 versus 4 inference calls**. The balanced control completed in **1 versus 1 action**, with **2 calls per journey**. These are genuine recorded runs, not a deterministic script presented as AI.
+- **Reproducible controlled evaluation.** In the documented real-model evaluation, **8/8 journeys** completed, and a separate repeatability sweep completed **12/12 paired comparisons** across three rounds per scenario. These results apply to our controlled fixtures, not all websites.
+- **Inspectable provenance.** Each completed comparison stores trace events and actual PNG screenshots, and the UI links the reported difference to the contributing steps.
+- **Public deployment.** ChoiceMirror is accessible at https://choicemirror-production.up.railway.app, with server-side credentials, a protected action surface and per-day request limits.
+- **Automated verification.** The project includes unit tests, Playwright end-to-end tests, CI builds and an actual Docker smoke test covering the deployed browser runtime and public-demo protections.
 
-- **Real AI navigation, end to end.** Two genuine AI comparisons executed through the
-  real web UI with real Nebius inference — run `cmp_04cbef31ed3a44c7` (asymmetric: join
-  **1** action / leave **3**, difference **2**, 6 inference calls, 0 rejected) and run
-  `cmp_dfe25737c0937557` (balanced: **1 / 1**, difference **0**, 4 inference calls) —
-  each verified real from the stored records (`mode: "ai"`, `modelErrors: []`, per-event
-  model evidence, no deterministic fallback). `[VALIDATION_REPORT.md §8.4]`
-- **Live eight-journey evaluation against the real API: 8/8 completed**, 20 inference
-  calls, 13 590 tokens, zero errors, single attempt; smoke checks confirmed endpoint
-  auth (HTTP 200 in 186 ms) and bounded structured inference (~1 s). `[LIVE_TEST_RESULTS.md §4.1–4.2]`
-- **Live repeatability: 12/12 paired records (24 journeys) completed** across 3 rounds
-  with every scenario × goal combination producing an identical action count round over
-  round and `errors: []`. `[LIVE_TEST_RESULTS.md §6]`
-- **Full UX validation: 22/22 spec bullets PASS** on the real running app — homepage
-  comprehension, comparison dashboard correctness, accessibility (keyboard, focus
-  indicators, alt text, WCAG AA contrast, reduced motion, responsive stacking). `[VALIDATION_REPORT.md §8.1–8.3]`
-- **Security & reliability audit: 30/30 spec bullets VERIFIED, zero defects** — origin
-  allowlist, prompt-injection resistance, credential containment, evidence integrity,
-  honest failure handling, plus 212/212 unit tests re-run green during the audit. `[SECURITY_REVIEW.md]`
-- **Test suite: 212 unit tests (31 files) and 52 Playwright E2E tests** green at the last
-  full gate re-run; live suites are opt-in (`pnpm test:live`) and never spend credits in
-  CI. `[docs/Memory.md — 2026-11-17 PR #5; docs/Phases.md]`
-- **Genuine, provenance-backed screenshots: 7/7** captured from the live app against real
-  stored run records, each visually swept clean of credentials and PII. `[assets/PROVENANCE.md]`
-- **Honest demo materials.** A complete 4:00 demo script with shot list and narration; the
-  recording is **honestly unavailable** (two genuine capture attempts failed at the
-  headless-screencast layer and were rejected after frame verification — no video is
-  claimed or substituted). `[DEMO_SCRIPT.md]`
+## What I learned
 
-## Future improvements
+An AI model can be useful as a navigation component without being trusted to make the final judgment. The hardest part was not generating commentary about a page; it was making the result **reproducible, independently measurable and inspectable**.
 
-*Not part of the current product — directions this could grow:*
+I also learned that a balanced result matters. A system that only reports problems isn't an audit tool. ChoiceMirror needs to say “the recorded action burden was equal” when that is what actually happened.
 
-- **Runs against operator-authorized staging environments** beyond the four local fixtures,
-  to measure friction on real product surfaces under the same evidence discipline.
-- **Richer friction signals** — timing distributions, backtracking and dead-end capture,
-  and repeated-run statistics with confidence intervals (today: one run per comparison,
-  action counts only).
-- **Wider AI-provider support** (the agent adapter is provider-shaped already) and
-  cost/latency comparison across models.
-- **Team features** — shared run libraries, finding annotations, and regression tracking
-  across product versions.
-- **A working screen recording of the demo script**, once a capture environment is
-  available (the script and shot list are ready now).
+## What's next
 
-## Limitations
+I would extend the controlled benchmark library, evaluate repeated runs with more robust uncertainty estimates, and explore permissioned use on staging websites. Future work could add subscriptions, trial cancellation and preference-management examples, along with evidence exports for UX research.
 
-- **Controlled benchmarks only.** All results describe measured behaviour on four
-  synthetic local fixtures; they say nothing about any real product or service.
-- **Measurements do not prove intentional manipulation or legal noncompliance.** Action
-  differences are descriptive measurements of recorded browser actions for a single run —
-  not a manipulation score, not a legal verdict.
-- **Trace semantics.** Counts reflect recorded successful clicks; backtracking,
-  interruptions, and dead ends are not captured (reported as not captured, never as zero).
-- **Model evidence is model-reported.** AI justifications are recorded as reported, not
-  independently verified; completion is always decided by the app, never the model.
-- **Single-run statistics.** No confidence intervals; repeatability was evaluated within
-  the available live credit budget (12 paired records × 3 rounds, documented above).
-- **Demo recording unavailable** in this environment; the submission relies on the script,
-  screenshots, and a runnable local demo until a capture can be produced externally.
+## Responsible AI and limitations
 
----
+ChoiceMirror currently works on **four synthetic benchmark interfaces**. It does not audit external websites, take actions on real accounts, or determine whether a business is breaking any law. A single action-count difference is descriptive, **not proof of dark-pattern intent**. Model explanations are labelled as unverified, and latency is not confused with human UX burden. The published demo is intentionally bounded so external visitors cannot spend unlimited Nebius credits or submit arbitrary URLs.
 
-*Draft prepared for transfer into Devpost. Submit only after the owner's explicit
-approval — see `SUBMISSION_CHECKLIST.md` owner actions O1–O5.*
+**Repository and verification:** [Source](https://github.com/1tsDaksh/choiceMirror) · [Real-model evaluation](LIVE_TEST_RESULTS.md) · [Security review](SECURITY_REVIEW.md) · [Screenshot provenance](assets/PROVENANCE.md).

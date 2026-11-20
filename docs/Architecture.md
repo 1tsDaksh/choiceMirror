@@ -1,169 +1,83 @@
-# ChoiceMirror — Architecture
+# ChoiceMirror — technical architecture
 
-**Version:** 0.5 · **Status:** Phase 5 validated with live inference (2026-11-18): live evaluation 8/8 journeys, live repeatability 12/12 pairs (D-033), UI/UX validation 22/22 PASS, security audit 30/30 VERIFIED; submission materials under `docs/submission/` — submission awaits owner approval
+ChoiceMirror is a two-journey browser comparison service. It measures the interaction burden for **both sides** of a controlled digital choice and links every finding to real browser events and screenshots.
 
-## Architectural principle
-Keep the **AI navigation policy**, **browser actuator**, **deterministic event capture**, and **evaluation/reporting** as independently testable modules. Build the smallest deployable system that can show an honest, repeatable paired test.
+**Live demo:** https://choicemirror-production.up.railway.app  
+**Runtime:** Next.js, Node.js 25, Playwright Chromium and Nebius Token Factory  
+**Model:** `zai-org/GLM-5.3-Flash` (server-side; model output is not itself a verdict)
 
-## High-level flow
+## System overview
+
 ```mermaid
 flowchart TD
-  U[User selects paired scenario] --> API[Next.js API / comparison controller]
-  API --> DB[(File store: JSON records + PNG screenshots)]
-  API --> Q[Run controller]
-  Q --> P[Playwright isolated browser]
-  F[Deterministic flow plan] --> P
-  A[AI navigation agent - packages/agent] --> Q
-  P --> B[Allowlisted benchmark website]
-  P --> E[Ordered events and screenshots]
-  E --> DB
-  DB --> S[Deterministic metric engine - packages/metrics]
-  S --> R[Evidence-linked comparison report - validated refs]
-  R --> UI[Next.js comparison UI]
+    A[Scenario launcher] --> B[Comparison API]
+    B --> C[Single-flight run controller]
+    C --> D[Nebius adapter / validated proposal]
+    D --> E[Playwright browser / private benchmark]
+    E --> F[Trace events + screenshots]
+    F --> G[File-backed evidence store]
+    G --> H[Comparison dashboard]
+    H --> I[Deterministic metrics + evidence inspector]
 ```
 
-## Run lifecycle (Phases 2–3 as shipped)
-1. Client posts `scenarioId` and two opposing `goalIds`; the server validates them against the catalog, **atomically reserves the single in-process run slot before its first `await`**, and answers `202 {comparisonId, status:"running"}` (`400` for invalid requests; `429` when the slot is already taken — the reservation is released on every failure path).
-2. The run controller executes Goal A then Goal B sequentially, each in a fresh isolated Playwright context with a fixed viewport, the shared seed, and cleared storage — equivalent starting conditions by construction.
-3. Each journey opens the fixture at the trusted `BENCHMARK_ORIGIN` behind the fail-closed request interceptor (see Security), records the non-counting goal selection, executes the documented flow-step clicks, and captures ordered events plus screenshot checkpoints.
-4. Fixed limits (max actions, step timeout, journey timeout) stop runaway runs with `timeout`, `blocked`, or `failed` states; browser resources are always released, including on failure.
-5. Journeys and screenshots are persisted incrementally, so partial evidence survives a mid-run failure; the comparison finishes `completed` or `failed`.
-6. The UI polls `GET /api/comparisons/:id` while `running` and renders the dashboard: status banner, main finding with an inspect-evidence action, metric cards, mirrored Goal A/B tracks, evidence inspector, and methodology panel.
-7. Phase 3 (shipped): with `mode: "ai"` the controller creates a fresh `NavigationAgent` per journey and `runAiJourney` loops observe → decide → validate → execute → app-side completion check (see below). Deterministic mode remains the default and is explicitly labelled; an unconfigured AI run fails with the server's reason instead of falling back.
-8. Phase 4 (shipped): `buildComparisonReport` derives a schema-valid `ComparisonReport` (metrics + exactly one finding + evidence validation) from stored evidence — pure, deterministic, no persistence, no model call.
+The comparison API accepts only scenario identifiers and ordered goals from the checked-in catalog. It cannot navigate to user-entered URLs.
 
-## AI navigation (Phase 3 as shipped)
-`packages/agent` is the provider adapter; `runAiJourney` in `packages/browser-runner` owns the loop. The deterministic path is unchanged — AI mode is an explicit, labelled opt-in from the launcher.
+### Components
 
-```mermaid
-flowchart LR
-  G[Goal text] --> O[Observe page]
-  O --> D[packages/agent decide]
-  D --> Z[Zod actionProposalSchema]
-  Z --> P[validateProposal policy gate]
-  P --> X[Execute click via driver]
-  X --> C{App-side completion check}
-  C -->|not complete| O
-  C -->|complete| E[Completed evidence]
-```
+| Component | Source | Responsibility |
+| --- | --- | --- |
+| Web app | `apps/web` | Scenario launcher, APIs, public guardrails and comparison dashboard |
+| Synthetic benchmark | `apps/benchmark` | Balanced/asymmetric membership and consent fixtures |
+| Contracts | `packages/contracts` | Scenario IDs, Zod schemas, action policy and typed trace evidence |
+| Nebius adapter | `packages/agent` | Versioned prompt, bounded provider calls, structured action parsing |
+| Browser runner | `packages/browser-runner` | Isolated Playwright sessions, allowed-origin requests and event/screenshot capture |
+| Metrics | `packages/metrics` | Pure event counts, paired comparisons, findings and evidence validation |
+| Storage | `packages/storage` | File-backed comparison records, journeys and PNG screenshots |
 
-- **Adapter (`packages/agent`):** `config` reads `NEBIUS_API_KEY`, `NEBIUS_BASE_URL`, `NEBIUS_MODEL` server-side only (defaults: `https://api.tokenfactory.nebius.com/v1`, `zai-org/GLM-5.3-Flash`); `prompt` is a byte-constant system prompt (version `phase3-v1`) with goal, observation, and rejection feedback travelling only in the user message; `client` is a typed `fetch` with a 20s per-call timeout, 2 bounded transient retries, an error taxonomy (auth, credits, model-unavailable, rate-limit, timeout, network, malformed, budget, api) and token accounting; `agent` turns one `DeciderInput` into one validated `ActionProposal`.
-- **Observation pipeline:** the Playwright driver collects raw page state (origin-checked URL, title, headings, visible buttons/links with accessible names and enabled state, bounded page text) → the pure `buildObservation` bounds, redacts PII-shaped values, and assigns stable `element-N` ids → only that `PageObservation` reaches the model, inside a delimited untrusted block. Raw HTML never travels.
-- **Action validation:** a proposal must pass Zod `actionProposalSchema` (only `click` with an `element-N` target, or `stop`) and then `validateProposal` (target exists in the observation, is enabled, and — during goal selection — must be this journey's own goal button) before the driver may execute it. Invalid proposals get a small fixed rejection budget with recorded feedback; the app, never the model, decides completion.
-- **Limits and budgets:** 12 decisions and 6 rejected proposals per journey, 50k tokens per journey, 2048 output tokens per call (raised from the planned 300 after live evidence: the reasoning model needs >1200 reasoning tokens before emitting its action), temperature 0; journeys stay bounded by the existing action/step/journey limits and always release the browser.
-- **Evidence:** `comparison.mode` (`deterministic` | `ai`; optional so Phase 2 records stay valid), a per-journey `ai` block (provider, model, prompt version, inference-call count, input/output tokens, rejected proposals, model errors) and a per-event `ai` block (observation reference, proposed action, validation result, model-reported justification, outcome, usage, latency). Model statements are rendered as *model-reported*, never as verified fact.
-- **Live evaluation:** `pnpm test:live` (`playwright.live.config.ts` + `tests/live/ai-eval.spec.ts`) runs all eight journeys against the real API only when `NEBIUS_LIVE=1` and `NEBIUS_API_KEY` are both set; `test:e2e` and CI stay credential-free against the local mock model on port 3099.
-- **Live repeatability (Phase 5):** `tests/live/repeatability.spec.ts` (4 scenarios × 1 pair × 3 rounds = 12 pairs / 24 journeys) adds a second opt-in flag — it runs only when `NEBIUS_LIVE=1` **and** `NEBIUS_LIVE_REPEAT=1` **and** `NEBIUS_API_KEY` are all set, so a plain `pnpm test:live` sweep spends no repeatability credits when the repeat flag is not exported (D-033).
+## Execution lifecycle
 
-## Metrics, findings and dashboard data flow (Phase 4 as shipped)
-`packages/metrics` is a **pure** package: no I/O, no persistence, no clock reads (durations parse stored timestamps), no model call. A function-per-stage pipeline composes the report:
+1. A browser client submits `{scenarioId, goalIds, mode}` to `POST /api/comparisons`; the API validates the complete scenario/goal mapping against the catalog.
+2. A synchronous **single-flight reservation** rejects a simultaneous second run with HTTP 429.
+3. In public mode, a **persisted usage gate** checks daily global, AI-specific and per-visitor quotas before a comparison is saved or model work begins.
+4. The runner opens a new isolated Chromium context for each goal, with fixed viewport and benchmark starting state.
+5. In **AI mode**, Nebius receives a bounded observation and proposes a structured `click` or `stop`. Zod and a fixed policy validate the proposal before Playwright is allowed to click the corresponding observed element. In deterministic mode, an approved action plan is replayed without model calls.
+6. The system records the actual trace and PNG screenshot at each checkpoint and saves each journey independently. A failed second journey cannot erase the first.
+7. The metrics package calculates paired action counts only if **both** journeys completed under matching conditions. Stored event/screenshot references are checked before a finding can be treated as evidence-complete.
+8. The dashboard exposes the result, current status, screenshots and model-reported explanations with separate labels.
 
-```mermaid
-flowchart LR
-  D[ComparisonDetail] --> J[computeJourneyMetrics per goal]
-  J --> C[computeComparisonMetrics]
-  C --> F[buildFindings - always exactly one]
-  F --> V[validateFindings - refs must resolve]
-  V -->|all refs resolve| R[ComparisonReport]
-  V -->|any ref broken| X[degradeReport - one insufficient-evidence finding]
-```
+**Action-count semantics:** Goal selection and navigation do not count as user actions. A counted action is a successful recorded interaction; repeated trace entries cannot inflate the count.
 
-- **Stages:** `computeJourneyMetrics` (per goal, `undefined` journey → honest `pending` metrics), `computeComparisonMetrics` (journeys mapped via `comparison.goalIds`, never array order), `buildFindings`, `validateFindings`, composed by `buildComparisonReport`. Every stage is typed by Zod (`journeyMetricsSchema`, `comparisonMetricsSchema`, `findingSchema`, `comparisonReportSchema`) and tested with hand-built fixtures independent of the runner.
-- **Honest-number rules:** `actionDifference`/`heavierJourney`/`actionRatio` exist only when **both** journeys completed with recorded counts; the ratio is `(max+1)/(min+1)` (PRD §9); unobservable values are `null` and render as "Not available" — never `0`; `result` is `balanced`, `observed-asymmetry`, or `inconclusive` with human-readable comparability reasons (mismatched seed/origin/viewport/mode, non-completion). Comparison `completed` never implies both journeys succeeded.
-- **Findings:** deterministic — one finding per report, evidence-bounded copy with `observed`/`calculated`/`interpreted` separated, no verdict language in title or explanation (the disclaimer lives only in `limitations`). Every cited `journeyId`, `stepNo`, and `screenshotId` must resolve against stored evidence; if any reference is broken (corrupt storage), `degradeReport` returns a single `insufficient-evidence` finding and the dashboard shows a validation strip — never fabricated references.
-- **Dashboard data flow:** the comparison page derives the report server-side at render, and the client's status poll recomputes the **same pure function** on each fetched detail — identical output on both paths, no report endpoint, no stored report (D-023).
-- **Contrast:** `apps/web/lib/contrast.test.ts` reads `globals.css` and pins WCAG AA ratios (4.5:1 body text, 4.5:1 tinted badges after compositing, 3:1 journey accents) so token drift fails the unit gate.
+## API
 
-## Proposed stack
-| Layer | Choice | Reason |
-|---|---|---|
-| Language | TypeScript, strict mode | Shared contracts and rapid development |
-| Web app | Next.js App Router + React | Dashboard, API and benchmark UI |
-| Styling | Tailwind CSS | Accessible, consistent design system |
-| Visualizations | Recharts or custom SVG | Evidence-centred comparison |
-| Browser | Playwright | Isolated contexts and screenshot capture |
-| AI | `packages/agent`: typed-fetch Nebius Token Factory adapter (OpenAI-compatible chat completions) with structured JSON action proposals — **shipped Phase 3**; `response_format` deliberately omitted pending live verification | Auditable, swappable structured action policy |
-| Validation | Zod | Runtime contracts for model output and API |
-| Storage | File-backed JSON records + PNG screenshots behind `ComparisonStore` (SQLite swap-ready) | No database setup; persistence isolated behind one interface |
-| Testing | Vitest + Playwright tests | Unit and end-to-end fixture replay |
-| CI | GitHub Actions | Typecheck, lint and tests |
-| Hosting | Deploy UI where supported; separately host a Playwright-capable worker if required | Serverless browsers may not run reliably |
+| Route | Method | Result |
+| --- | --- | --- |
+| `/api/scenarios` | GET | Controlled scenario catalog |
+| `/api/comparisons` | POST | Starts a validated comparison; 202 or explicit 400/403/429/503 |
+| `/api/comparisons/:id` | GET | Schema-validated comparison and journeys |
+| `/api/comparisons/:id/artifacts/:artifactId` | GET | Actual stored PNG evidence with validated identifiers |
+| `/api/health` | GET | Web and benchmark readiness; reports 503 if public mode lacks key or mounted storage |
 
-**Important:** service selection must be confirmed before implementation. Do not promise persistent SQLite or Playwright support on incompatible serverless hosting. Local execution with documented commands is the reliable fallback.
+No public endpoint exposes the Nebius key, accepts arbitrary URLs, or directly proxies raw model requests.
 
-## Monorepo structure (Phase 2 as shipped)
-```text
-choiceMirror/
-├── README.md
-├── docs/
-│   ├── PRD.md
-│   ├── Architecture.md
-│   ├── Rules.md
-│   ├── Phases.md
-│   ├── Design.md
-│   └── Memory.md
-├── package.json
-├── pnpm-workspace.yaml
-├── .env.example
-├── .gitignore
-├── apps/
-│   ├── web/
-│   │   ├── app/
-│   │   │   ├── page.tsx
-│   │   │   ├── comparisons/[id]/page.tsx
-│   │   │   └── api/comparisons/           # start, status, artifact routes
-│   │   ├── components/
-│   │   └── lib/                           # store access + run controller
-│   └── benchmark/
-│       ├── app/
-│       └── fixtures/
-├── packages/
-│   ├── contracts/         # Zod API, evidence, and journey-plan schemas
-│   ├── browser-runner/    # deterministic + AI Playwright journey executors
-│   ├── storage/           # file-backed ComparisonStore adapters
-│   ├── agent/             # Nebius adapter: config, prompt, client, agent (Phase 3)
-│   └── metrics/           # pure metrics, findings, evidence validation (Phase 4)
-├── tests/
-│   ├── e2e/               # two-server Playwright acceptance tests + mock model
-│   └── live/              # opt-in live Nebius evaluation (`pnpm test:live`)
-└── .github/workflows/ci.yml
-```
-Structure updates here as implementation feedback arrives; `packages/metrics` shipped in Phase 4 and is consumed only by the web app's comparison page.
+## Safety boundaries
 
-## Suggested core entities
-Shipped schemas live in `packages/contracts` (`ComparisonRecord`, `JourneyRecord`, `TraceEvent`):
-- `Comparison`: id, scenarioId, goalIds, seed, status, mode (`deterministic` | `ai`, optional for pre-Phase-3 records), createdAt, completedAt, error.
-- `JourneyRun`: id, comparisonId, goalId, status, seed, origin, viewport, expectedActionCount, actionCount, timestamps, events, screenshots, error, ai (optional model-reported summary: provider, model, prompt version, inference calls, tokens, rejected proposals, model errors).
-- `TraceEvent`: stepNo, timestamp, type, label, outcome, countsAsAction, detail, screenshotId, ai (optional: observationRef, proposed action, validation, model-reported justification, usage, latency).
+- Playwright is constrained to the exact configured benchmark origin. Off-origin subresources, page fetches and redirect chains are blocked; service workers are disabled.
+- Model actions are restricted to validated, observed DOM controls. There is no free-form JavaScript, shell execution, text submission, account access, or model-driven URL navigation.
+- Runtime caps: **10 counted actions**, **12 AI decisions**, **6 rejected AI proposals**, **60-second journey timeout**, **10-second step timeout** and bounded model requests/token budgets.
+- An unconfigured or failed AI run never silently changes to deterministic mode.
+- Evidence types distinguish **observed browser events**, **calculated metrics**, and **model-reported explanations**.
+- Missing, partial, corrupt or incomparable records produce **inconclusive**, not an invented finding.
 
-Shipped reporting entities (Phase 4, `packages/metrics/src/schemas.ts`):
-- `JourneyMetrics`: journeyId, goalId, outcome (`completed` | `failed` | `blocked` | `timed-out` | `pending`), actionCount (unique successful `click` events flagged `countsAsAction` — one shared `isCountedAction` predicate with citations and UI, D-030), navigationEventCount, durationMs, ai (nullable inference-call/token summary), evidence (trace and screenshot completeness). Unobservable values are `null`, never `0`.
-- `ComparisonMetrics`: journeys as a tuple in `comparison.goalIds` order, actionDifference, heavierJourney, actionRatio (`(max+1)/(min+1)`) — all three `null` unless both journeys completed with counts **under matching conditions** (no comparability reasons, D-029) — comparableConditions (flag + human-readable reasons), result (`balanced` | `observed-asymmetry` | `inconclusive`). A degraded report is always `inconclusive` with the comparative fields null while per-journey counts survive (D-029).
-- `Finding`: id, category, title, explanation, observed[], calculated[], interpreted, evidence[{journeyId, stepNos, screenshotIds}], limitations[], quality (`evidence-complete` | `evidence-partial` | `insufficient-evidence`).
-- `ComparisonReport`: metrics + exactly one finding + validation. Deliberately **not persisted** — derived on render (D-023).
+## Public deployment
 
-PRD §9 also names backtracking, interruptions, and human takeover; the trace format cannot prove them, so they are reported as not captured in limitations (never as `0`) — see D-027.
+The production service runs on Railway using the root Docker image and [start script](../scripts/start-public-demo.mjs). One public Next.js server listens on Railway's injected `PORT`; the benchmark listens only at `127.0.0.1:3001`. The web server's Playwright jobs access the benchmark internally.
 
-Never persist model reasoning as fact; store brief model-provided action justification and measured events separately.
+**Production configuration:** one replica, persistent volume mounted at `/data`, `CHOICEMIRROR_DATA_DIR=/data`, and a private `NEBIUS_API_KEY` in Railway Variables. Browser connections use the public HTTPS domain. The current domain targets **container port 8080**.
 
-## API (as shipped in Phase 2)
-- `GET /api/scenarios`: list controlled fixtures.
-- `POST /api/comparisons`: validate `{scenarioId, goalIds}` against the catalog and start a bounded paired run → `202 {comparisonId, status:"running"}`; `400` for invalid requests; `429` while another comparison is running (atomic single-flight reservation taken before the first `await` and released on every failure path).
-- `GET /api/comparisons/:id`: `{comparison, journeys}` validated against `comparisonDetailSchema`; `404` for unknown, corrupt, or traversal ids.
-- `GET /api/comparisons/:id/artifacts/:artifactId`: stored `image/png` screenshot bytes with `Cache-Control: private, max-age=300`; `404` otherwise. There is deliberately **no** endpoint that navigates to an arbitrary URL.
-- There are deliberately **no** model-provider endpoints: inference runs inside the server process with the key read from the environment (never sent to the browser, never logged). There are deliberately **no** metrics endpoints either: the comparison report is derived from the existing `GET /api/comparisons/:id` payload by the pure `@choicemirror/metrics` pipeline on every render (D-023). The MVP stays a single server process; do not create unnecessary distributed infrastructure.
+The storage directory also contains the **UTC-day quota state**, written before accepting each run. The file-backed quota and single-process reservation are intentionally **not horizontally scalable**. Multiple replicas would require a transactional shared datastore and distributed job queue.
 
-## Security / isolation
-- **Request-layer origin guard (shipped):** a fail-closed `context.route` handler is installed before any page exists; every request must match the exact trusted origin or it is aborted in the browser before a byte leaves. Service workers are blocked so the interceptor is the only path to the network. Because Playwright routes only the first request of a redirect chain (microsoft/playwright#34994) and native redirect hops do not re-enter the handler, chains are walked hop-by-hop with `route.fetch({maxRedirects:0})` and aborted at the first off-origin target. Responses are delivered with `route.continue()`, never `route.fulfill()` — fulfilling a document leaves byte-identical HTML yet silently breaks Next.js hydration (React never attaches), while fetch-then-continue hydrates. Blocked URLs are recorded without query strings, and any violation marks the journey `blocked`. Covered by `tests/e2e/origin-guard.spec.ts` (subresource, single-hop redirect, multi-hop chain — each asserting zero hits on the external server).
-- Allowlist full origin(s), block arbitrary user-provided URLs in MVP.
-- Dedicated test browser without real credentials, storage or extensions.
-- The model may propose only `click` (on an observed, enabled element) or `stop`; there is no shell, JavaScript execution, typing, free-text input, URL navigation, or browser configuration anywhere in the action surface, and every proposal passes Zod schema validation plus the `validateProposal` policy gate before it can reach the driver.
-- Model and page text are untrusted: page text travels only inside a delimited untrusted block of the user message under a byte-constant system prompt, and a controlled prompt-injection E2E test proves injected page instructions can neither complete the journey nor escape the origin.
-- Cap requests, action steps, per-run time, model decisions (12), rejected proposals (6), tokens per journey (50k), transient retries (2) and per-call timeout (20s); an unconfigured AI run fails with the server's reason rather than falling back silently.
-- Store API secrets server-side; use fake accounts and synthetic fixture data only.
+See [Railway operations](submission/PUBLIC_DEMO_DEPLOYMENT.md) and [security review](submission/SECURITY_REVIEW.md) for deployment checks and limitations.
 
-## Observability and reproducibility
-Log scenario and fixture version, viewport, seed, action parameters, environment version, model/provider and model settings. Capture structured JSONL traces and artifacts. Re-run identical fixtures and compare actual events; log mismatches rather than hiding them.
+## Verification
 
-## Boundaries / deployment
-A deployed dashboard does not constitute a live working run unless the browser worker and API actually operate. Prefer demonstrable local MVP over a public UI that displays fabricated results.
+`pnpm typecheck`, `pnpm lint`, `pnpm test:unit`, `pnpm test:e2e` and `pnpm build` run in CI without API credits. A dedicated [Docker smoke workflow](../.github/workflows/public-demo-smoke.yml) exercises the container, Playwright Chromium, a complete deterministic comparison, same-origin checks, and persistent quota denial. Live model evaluation is opt-in and documented in [LIVE_TEST_RESULTS.md](submission/LIVE_TEST_RESULTS.md).

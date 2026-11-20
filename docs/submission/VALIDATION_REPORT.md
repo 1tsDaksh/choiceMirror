@@ -1,32 +1,13 @@
-# ChoiceMirror — UI/UX validation report (spec §8)
+# ChoiceMirror — interface validation report
 
-> **Date:** 2026-11-18 · **Branch:** `feat/phase-5-final-validation` · **Scope:** spec
-> `docs/superpowers/specs/2026-11-18-phase-5-final-validation.md` §8 (Final UI/UX quality
-> assurance) — homepage comprehension, comparison dashboard, accessibility and
-> responsiveness.
->
-> **Method.** Every verdict below was produced against the **real running app**:
-> `next dev` on `http://localhost:3000` (web) and `http://localhost:3001` (benchmark), the
-> dev servers left running by plan Task 2 (no restart was needed). Interactive checks were
-> driven by throwaway Playwright probe scripts (14 probe tests, kept in the gitignored SDD
-> scratch dir `.superpowers/sdd/2026-11-18-phase-5-final-validation/task6-probes/`; not
-> committed — the OpenCode desktop browser was not attached to this session, the same
-> driver constraint recorded in the Task 2 run log). Stored evidence was cross-checked
-> read-only against the JSON records under `apps/web/data/` (gitignored, never committed).
->
-> **Credit discipline.** No new AI runs, no live-test suite, no credentialed commands, and
-> `apps/web/.env.local` was never opened or printed. The only run created during this task
-> (`cmp_d590484c8b4fc74e`, created by the keyboard-only activation probe) is
-> **deterministic** (`"mode":"deterministic"` in its stored `record.json`) and spent no
-> inference credits.
->
-> **Verdict format:** `PASS (how verified)` · `FAIL (→ fix #N)` · `NOTE (cosmetic)`.
-> **Result: 22/22 spec §8 bullets PASS, 0 FAIL** — two cosmetic findings (#1, #2) are
-> recorded as notes and routed to the follow-up fix task; none blocks a judge.
+**Date:** 18 November 2026.  
+**Scope:** Historical local verification of the scenario launcher, comparison dashboard, mobile layout and keyboard/accessibility behaviour.
 
----
+The original validation was performed on the running Next.js web app and synthetic benchmark using Playwright browser checks and **real stored Nebius AI comparison records**. Temporary local probe scripts and generated images were not committed. The comparisons were cross-checked against schema-validated stored journey data.
 
-## §8.1 Homepage — can a visitor immediately understand…
+**Result:** **22/22 tested interface and accessibility checks passed**, with two documented low-priority cosmetic observations. This report preserves the individual checks, actual comparison IDs, measured results and screenshot evidence; it is not a claim that every aspect of the current public deployment was independently re-audited.
+
+## Homepage — can a visitor immediately understand…
 
 | # | Spec bullet | Verdict |
 |---|---|---|
@@ -36,7 +17,7 @@
 | H4 | How to select AI or deterministic mode | **PASS** — a second fieldset is labelled *"Execution mode"* with two radio cards: *"Deterministic — Replays the app's own validated action plan."* and *"AI (Nebius) — The model observes each page and chooses the next validated action."* After scenario selection the helper line restates the mode's behaviour: *"AI mode lets the Nebius model observe each page and choose the next validated action. Runs execute locally with fixed limits."* |
 | H5 | How to launch a comparison | **PASS** — after selecting a scenario the paired-goals panel shows *"Run comparison"* (primary CTA) next to *"Explore manually in benchmark →"*. Verified end-to-end by keyboard only: Tab → Space on the scenario card → Tab → Enter on *Run comparison* navigated to a comparison page that reached `Completed` (`cmp_d590484c8b4fc74e`, deterministic walkthrough, no inference — see header). |
 
-## §8.2 Comparison dashboard
+## Comparison dashboard
 
 Verified on both stored real-AI runs — **Run 1** `cmp_04cbef31ed3a44c7`
 (membership-asymmetric, Join 1 / Leave 3, difference 2) and **Run 2**
@@ -56,7 +37,7 @@ failure/incomplete states (see bullet D9). All numbers are labelled actual vs ex
 | D8 | Limitations remain visible | **PASS** — the finding card carries a *"Limitations"* disclosure (Run 2 items: *"Action differences are descriptive measurements, not proof of unlawful or intentional manipulation."*, *"Single run against the controlled local benchmark; results describe this execution only."*, *"Counts reflect recorded browser actions; backtracking, interruptions and dead ends are not captured by the trace format."*, *"Model-reported justifications are recorded as reported, not independently verified."*), and the *"How these measurements work"* panel adds *"What these numbers do not show"* and *"AI navigation vs interface friction"* sections. |
 | D9 | Unknown and unsuccessful results are handled honestly | **PASS** — exercised in the real UI on five seeded state fixtures written into the app's (gitignored) data dir using the exact E2E seeding module (`tests/e2e/support/seed-fixtures.ts`, ids `cmp_5eed0000000000NN`; the E2E suite covers the same states — `dashboard.spec.ts` lines 215–410). Observed, quoted: **failed run** — banner *"Failed — This run stopped before both goals finished. The error is shown below."* + *"Journey B (reject) failed before both goals finished."*, finding *"Inconclusive — Insufficient evidence — Inconclusive comparison — Journey B (reject) did not complete (failed), so action counts cannot be compared."*, difference card *"— / Not available"*, and the failed journey shows its *"Journey error"* box; **running** — *"Running"* banner, both tracks *"Waiting / Waiting for this goal to run. / Not available"*, *"Inconclusive"* finding, difference card *"— / Not available"*; **corrupt journey file** — banner *"This run finished, but the stored evidence below is incomplete — see the findings and limitations."*, *"Journey B (reject) has no recorded evidence yet, so action counts cannot be compared."* (never "0 recorded actions"); **mismatched seeds** — *"Seeds differ between journeys, so action counts cannot be compared."* with the difference withheld (*"— / Not available"*) while raw counts stay on their own cards; **degraded evidence** — *"Stored evidence failed validation — findings are withheld."* + *"Evidence could not be validated"*, difference withheld. No fake zeros or invented numbers anywhere. |
 
-## §8.3 Accessibility and responsiveness
+## Accessibility and responsiveness
 
 | # | Spec bullet | Verdict |
 |---|---|---|
@@ -71,7 +52,7 @@ failure/incomplete states (see bullet D9). All numbers are labelled actual vs ex
 
 ---
 
-## Findings for the fix task
+## Cosmetic observations recorded during validation
 
 No functional usability defects were found. Two cosmetic items are routed to the
 follow-up fix task; neither blocks comprehension or accessibility criteria.
@@ -87,7 +68,7 @@ Notes (no action routed):
 
 ---
 
-## §8.4 Evidence — end-to-end AI run log (absorbed from `docs/submission/ui-runs.md`)
+## Evidence — end-to-end AI run log (absorbed from `docs/submission/ui-runs.md`)
 
 This section merges the former standalone run log `docs/submission/ui-runs.md` (deleted in
 the same commit as this report) and is now the single authoritative judge-facing
@@ -108,13 +89,13 @@ GET http://localhost:3000 -> HTTP 200
 GET http://localhost:3001 -> HTTP 200
 ```
 
-(the Task 2 report previously carried this claim; it is now independently re-confirmed
+(an earlier review previously carried this claim; it is now independently re-confirmed
 here, both before and after the §8 walkthrough).
 
 - **Branch:** `feat/phase-5-final-validation`
 - **Mode for both runs:** **AI (Nebius)** selected in the launcher radio group; credential from gitignored `apps/web/.env.local` (key value never printed or committed)
-- **Driver (Task 2 runs):** throwaway Playwright script (kept in the gitignored SDD scratch dir, not committed — the OpenCode desktop browser was not attached to that session). It drives the real launcher exactly like `tests/e2e/ai-web.spec.ts` does: check the scenario radio → check the `AI (Nebius)` radio → click **Run comparison** → wait for the detail page's `Completed` status. No code was changed.
-- **Driver (this Task 6 walkthrough):** throwaway Playwright probe suite in the same scratch dir (14 tests; the desktop browser again not attached). Seeded failure-state fixtures were written into `apps/web/data/` (gitignored) by importing the E2E suite's own `writeSeedData` module — the same records `tests/e2e/dashboard.spec.ts` uses — so failed/inconclusive states were viewed in the real UI, not faked.
+- **Initial test driver:** throwaway Playwright script (kept in the gitignored SDD scratch dir, not committed — the validation used stand-alone Playwright probes). It drives the real launcher exactly like `tests/e2e/ai-web.spec.ts` does: check the scenario radio → check the `AI (Nebius)` radio → click **Run comparison** → wait for the detail page's `Completed` status. No code was changed.
+- **Validation driver:** throwaway Playwright probe suite in the same scratch dir (14 tests; a stand-alone Playwright driver). Seeded failure-state fixtures were written into `apps/web/data/` (gitignored) by importing the E2E suite's own `writeSeedData` module — the same records `tests/e2e/dashboard.spec.ts` uses — so failed/inconclusive states were viewed in the real UI, not faked.
 - **Real-inference evidence:** Next dev does not log outbound HTTPS traffic, so the per-run `ai.inferenceCalls >= 1` values below (with provider/model/token usage, read from the stored JSON records under `apps/web/data/`) are the server-side real-traffic evidence. The dev server log contained no errors during either run.
 
 ### Run 1 — `cmp_04cbef31ed3a44c7` · membership-asymmetric
@@ -181,10 +162,10 @@ comparison records), satisfying the conditional-display requirement that compara
 numbers only appear under matched conditions. Total real-inference spend: **2 runs,
 0 retries** (credit budget respected).
 
-### Screenshot candidates for Task 7
+### Screenshot reference captures
 
 Ad-hoc captures live in the gitignored SDD scratch dir
-`.superpowers/sdd/2026-11-18-phase-5-final-validation/` (Task 7 owns
+an untracked local QA scratch directory (used during screenshot capture
 `docs/submission/assets/`):
 
 - `shot-asymmetric-full.png` — Run 1 dashboard, full page
@@ -192,7 +173,7 @@ Ad-hoc captures live in the gitignored SDD scratch dir
 - `shot-asymmetric-inspector.png` — Run 1 evidence inspector (step 2, model justification chip)
 - `shot-balanced-full.png`, `shot-balanced-Goal-A-journey.png`, `shot-balanced-Goal-B-journey.png`, `shot-balanced-inspector.png` — Run 2 equivalents
 
-Task 6 additionally captured (same scratch dir, `task6-probes/out/`): homepage desktop and
+The review additionally captured (same scratch dir, the local QA output directory): homepage desktop and
 mobile, both run dashboards at desktop and mobile widths, the inspector after step
 selection, the keyboard-focused launcher cards, all five seeded honest-state pages, and a
 reduced-motion capture — usable as spares or for the accessibility slides.
@@ -205,7 +186,7 @@ beside them in the same scratch dir.
 ## Appendix — probe inventory (this task)
 
 Throwaway, uncommitted, under
-`.superpowers/sdd/2026-11-18-phase-5-final-validation/task6-probes/`:
+an untracked local QA scratch directory:
 
 - `probes.spec.ts` + `probe.config.ts` — 14 tests: homepage desktop/mobile copy + contrast + headings; Run 1 dashboard desktop (layout boxes, inspector flow, methodology, focus audit, artifact HTTP statuses) and mobile stacking; Run 2 dashboard desktop + mobile; five seeded honest-state pages; keyboard-only dashboard journey; keyboard-only run activation; reduced-motion emulation.
 - `contrast-dashboard.spec.ts` — dashboard/failure-state contrast spot-checks + image-alt audit.
