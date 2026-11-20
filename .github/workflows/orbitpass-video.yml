@@ -1,0 +1,147 @@
+name: Capture final silent OrbitPass real AI video
+
+on:
+  workflow_dispatch:
+  # Single trusted-main invocation. Remove the push trigger after capture.
+  push:
+    branches: [main]
+    paths:
+      - docs/submission/ORBITPASS_VIDEO_RUN_REQUEST.md
+
+permissions:
+  contents: read
+
+jobs:
+  desktop-video:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DEMO_MODE: ai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install real Chromium and desktop recorder
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb openbox ffmpeg
+      - name: Guard live AI credentials without printing them
+        shell: bash
+        env:
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
+        run: |
+          if [[ "$DEMO_MODE" == "ai" && -z "$NEBIUS_API_KEY" ]]; then
+            echo "::error::To create the live AI video, set a fresh NEBIUS_API_KEY in GitHub repository Settings > Secrets and variables > Actions. Do not paste the key into an issue or PR."
+            exit 1
+          fi
+          echo "Recording mode: $DEMO_MODE"
+      - name: Record real headed browser interaction through FFmpeg X11 capture
+        shell: bash
+        env:
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
+        run: |
+          set -euo pipefail
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1440x900x24 -ac -nolisten tcp > "$RUNNER_TEMP/xvfb.log" 2>&1 &
+          xvfb_pid=$!
+          sleep 2
+          openbox > "$RUNNER_TEMP/openbox.log" 2>&1 &
+          openbox_pid=$!
+          pnpm --filter @choicemirror/benchmark dev > "$RUNNER_TEMP/benchmark.log" 2>&1 &
+          benchmark_pid=$!
+          pnpm --filter @choicemirror/web dev > "$RUNNER_TEMP/web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" "$benchmark_pid" "$openbox_pid" "$xvfb_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:3000/ > /dev/null &&
+               curl -fsS http://localhost:3001/ > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$ready" != true ]]; then
+            echo "::error::App or benchmark did not start."
+            tail -n 35 "$RUNNER_TEMP/web.log" || true
+            tail -n 35 "$RUNNER_TEMP/benchmark.log" || true
+            exit 1
+          fi
+          node scripts/record-orbitpass-demo.mjs
+      - name: Validate playable duration and real changing video frames
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, hashlib, json, statistics, subprocess
+          clips = glob.glob("demo-orbitpass/*-screen.mp4")
+          if len(clips) != 1:
+              raise SystemExit("Missing the real silent MP4")
+          for name in glob.glob("demo-orbitpass/*-timestamped-transcript.md") + glob.glob("demo-orbitpass/*-optional-subtitles.srt"):
+              if not open(name, encoding="utf8").read().strip():
+                  raise SystemExit("Empty timestamped transcript file")
+          if len(glob.glob("demo-orbitpass/*-timestamped-transcript.md")) != 1 or len(glob.glob("demo-orbitpass/*-optional-subtitles.srt")) != 1:
+              raise SystemExit("Missing transcript or optional SRT")
+          evidence = glob.glob("demo-orbitpass/*-runs.json")
+          if len(evidence) != 1:
+              raise SystemExit("Missing unique real AI comparison record")
+          data = json.load(open(evidence[0], encoding="utf8"))
+          runs = data.get("records", [])
+          if data.get("mode") != "ai" or len(runs) != 2 or data.get("selectorCheck", {}).get("oldLabelMatches") != 0:
+              raise SystemExit("Expected two genuine Nebius comparisons and verified reworded selector")
+          if [r.get("scenario") for r in runs] != ["membership-case-study", "membership-copy-variant"]:
+              raise SystemExit("Wrong scenarios recorded")
+          for r in runs:
+              journeys = r.get("journeys", [])
+              if r.get("mode") != "ai" or [j.get("actions") for j in journeys] != [1, 5] or any(j.get("status") != "completed" or j.get("inferenceCalls", 0) < 1 for j in journeys):
+                  raise SystemExit("Missing genuine 1-versus-5 AI evidence in video")
+          print("VERIFIED: reference and variant both completed 1 versus 5 with paid-model evidence; original fixed-label CTA absent")
+          for path in clips:
+              streams = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                  "stream=codec_type", "-of", "csv=p=0", path],
+                  capture_output=True, text=True, check=True).stdout.splitlines()
+              if "video" not in streams or "audio" in streams:
+                  raise SystemExit("Recording must contain video, and absolutely no audio stream")
+              probe = subprocess.run(
+                  ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                   "-of", "json", path],
+                  capture_output=True, text=True, check=True)
+              duration = float(json.loads(probe.stdout)["format"]["duration"])
+              if not 75 <= duration <= 480:
+                  raise SystemExit(f"Video duration invalid: {duration:.1f}s")
+              samples = []
+              for fraction in [0.12, 0.35, 0.60, 0.87]:
+                  frame = subprocess.run(
+                      ["ffmpeg", "-hide_banner", "-loglevel", "error",
+                       "-ss", str(duration*fraction), "-i", path,
+                       "-frames:v", "1", "-vf", "scale=32:32,format=gray",
+                       "-f", "rawvideo", "-"],
+                      capture_output=True, check=True).stdout
+                  if len(frame) != 1024 or statistics.pstdev(frame) < 8:
+                      raise SystemExit("Video has a blank/unreadable frame")
+                  samples.append(hashlib.sha256(frame).hexdigest())
+              if len(set(samples)) < 3:
+                  raise SystemExit("Video is frozen; refused to deliver")
+              print(f"VERIFIED: {path}, duration={duration:.1f}s, 4 nonblank samples, {len(set(samples))} distinct frames")
+          PY
+      - name: Upload SILENT MP4, timestamped transcript, optional SRT and run evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: choicemirror-orbitpass-silent-genuine-nebius-${{ github.run_number }}
+          path: |
+            demo-orbitpass/*-screen.mp4
+            demo-orbitpass/*-timestamped-transcript.md
+            demo-orbitpass/*-optional-subtitles.srt
+            demo-orbitpass/*-verification.png
+            demo-orbitpass/*-runs.json
+          if-no-files-found: warn
+          retention-days: 30
