@@ -70,9 +70,27 @@ export async function POST(request: Request): Promise<Response> {
   let body: unknown;
   try {
     if (publicDemoEnabled()) {
-      const payload = await request.text();
-      if (payload.length > 2048) return invalidRequest();
-      body = JSON.parse(payload);
+      // Bound the streamed request BEFORE decoding it, including clients
+      // using chunked bodies without a Content-Length header.
+      const declaredLength = Number(request.headers.get("content-length") ?? "0");
+      if (!Number.isFinite(declaredLength) || declaredLength > 2048) {
+        return invalidRequest();
+      }
+      const reader = request.body?.getReader();
+      if (!reader) return invalidRequest();
+      const chunks: Uint8Array[] = [];
+      let totalBytes = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+        if (totalBytes > 2048) {
+          void reader.cancel().catch(() => {});
+          return invalidRequest();
+        }
+        chunks.push(value);
+      }
+      body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
     } else {
       body = await request.json();
     }
