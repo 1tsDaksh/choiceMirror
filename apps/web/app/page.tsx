@@ -2,6 +2,9 @@ import { scenarios } from "@choicemirror/contracts";
 
 import { ScenarioLauncher } from "@/components/scenario-launcher";
 
+// Public demo configuration is supplied at runtime by Railway, not at build time.
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   const publicDemo = process.env.PUBLIC_DEMO_ENABLED === "1";
   return (
