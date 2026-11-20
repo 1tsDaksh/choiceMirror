@@ -32,7 +32,20 @@ The hosted service uses a private server-side Nebius key. To protect credits and
 
 I added **OrbitPass**, a completely fictional streaming subscription interface informed by the FTC's historically documented concerns about multi-screen cancellations. Joining takes one action, whereas cancellation passes through five review, offer and confirmation steps. The counts must come from real recorded Playwright browser events.
 
-A reworded variation keeps the same underlying task but changes every call-to-action label. A deliberately brittle fixed-label script cannot traverse the changed copy without maintenance; the product's observation-driven navigation can be evaluated on that new page. **Mock-based CI is not real Nebius proof**. A separately gated real-model test records actual success or failure.
+A reworded variation preserves the goals and interaction count while changing all action labels and the desktop layout. A deliberately brittle fixed-label script cannot traverse that variation without maintenance; a maintained deterministic script can. I independently tested the observation-driven flow using **genuine Nebius `zai-org/GLM-5.3-Flash`**, not just a mocked endpoint.
+
+**Verified real-model results — 20 November 2026:** All **four of four** goal journeys completed on the two fictional pages. Each Join path took **1 recorded action** and each Cancel path took **5**.
+
+| Fictional OrbitPass page | Goal | Recorded actions | Genuine Nebius calls | PNG checkpoints | Result |
+| --- | --- | ---: | ---: | ---: | --- |
+| Reference layout | Join | 1 | 2 | 4 | Completed |
+| Reference layout | Cancel | 5 | 7 | 8 | Completed |
+| Reworded + rearranged layout | Join | 1 | 2 | 4 | Completed |
+| Reworded + rearranged layout | Cancel | 5 | 6 | 8 | Completed |
+
+**Evidence:** **17 real inference calls**, **10,958 input** / **1,880 output tokens**, **24 genuine browser PNGs**, and **zero rejected model proposals or model errors**. The [protected Actions run](https://github.com/1tsDaksh/choiceMirror/actions/runs/44837025110) passed, and its [evidence artifact](https://github.com/1tsDaksh/choiceMirror/actions/runs/44837025110/artifacts/14678592656) preserves the redacted results JSON and screenshots (30-day retention). See the [per-journey evidence report](docs/submission/CASE_STUDY_LIVE_RESULTS.md).
+
+This is **one successful controlled test per path**, not proof that AI always generalises, a population-level UX study, or evidence about a real external website.
 
 [Case study and experimental method](docs/submission/CASE_STUDY.md) · [FTC public source](https://www.ftc.gov/news-events/news/press-releases/2023/06/ftc-takes-action-against-amazon-enrolling-consumers-amazon-prime-without-consent-sabotaging-their)
 
