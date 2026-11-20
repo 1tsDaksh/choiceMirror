@@ -370,7 +370,7 @@ test("fixture index lists every controlled fixture without external requests", a
     }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: /Open fixture/ })).toHaveCount(
-    4,
+    6,
   );
   expect(externalRequests).toEqual([]);
 });
