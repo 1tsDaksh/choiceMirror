@@ -100,7 +100,7 @@ export function isAllowedPublicDemoOrigin(request: Request): boolean {
     // A reverse proxy/Next production server can reconstruct request.url as
     // localhost even though the user reached an external HTTPS hostname.
     // Check the actual incoming Host instead; browsers cannot forge Host.
-    const host = request.headers.get("host");
+    const host = request.headers.get("host") ?? new URL(request.url).host;
     if (!host || sent.host.toLowerCase() !== host.toLowerCase()) return false;
 
     // Railway terminates TLS at its edge and forwards the original scheme.
