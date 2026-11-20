@@ -6,6 +6,11 @@ import {
 } from "@choicemirror/contracts";
 
 import { isAiConfigured } from "../../../lib/ai-agent";
+import {
+  isAllowedPublicDemoOrigin,
+  publicDemoEnabled,
+  reservePublicDemoRequest,
+} from "../../../lib/public-demo-guard";
 import { getStore } from "../../../lib/comparison-store";
 import {
   releaseRun,
@@ -24,7 +29,9 @@ function aiNotConfigured(): Response {
   return Response.json(
     {
       error:
-        "AI mode is not configured. Set NEBIUS_API_KEY in apps/web/.env.local.",
+        publicDemoEnabled()
+          ? "Live AI is temporarily unavailable. Please try again later."
+          : "AI mode is not configured. Set NEBIUS_API_KEY in apps/web/.env.local.",
     },
     { status: 503 },
   );
@@ -45,10 +52,21 @@ function notStarted(): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  let body: unknown;
+  // In public mode, enforce same-origin JSON requests and a tiny request body
+  // before any CPU-intensive work or credits can be consumed.
+  if (!isAllowedPublicDemoOrigin(request)) {
+    return Response.json({ error: "Request origin is not allowed." }, { status: 403 });
+  }
 
+  let body: unknown;
   try {
-    body = await request.json();
+    if (publicDemoEnabled()) {
+      const payload = await request.text();
+      if (payload.length > 2048) return invalidRequest();
+      body = JSON.parse(payload);
+    } else {
+      body = await request.json();
+    }
   } catch {
     return invalidRequest();
   }
@@ -97,6 +115,26 @@ export async function POST(request: Request): Promise<Response> {
   // the losing request answers 429 without touching the store.
   if (!tryReserveRun(record.id)) {
     return alreadyRunning();
+  }
+
+  // Reserve budget AFTER claiming the one-run slot. Within our one-replica
+  // Railway process this quota check and persistent write are synchronous,
+  // so two simultaneous requests cannot spend credits beyond the cap.
+  const quota = reservePublicDemoRequest(request, mode);
+  if (!quota.allowed) {
+    releaseRun(record.id);
+    return Response.json(
+      { error: quota.reason },
+      {
+        status: quota.status,
+        headers: {
+          "Cache-Control": "no-store",
+          ...(quota.retryAfterSeconds !== undefined
+            ? { "Retry-After": String(quota.retryAfterSeconds) }
+            : {}),
+        },
+      },
+    );
   }
 
   try {
