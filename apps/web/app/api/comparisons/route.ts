@@ -52,6 +52,15 @@ function notStarted(): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  // Disabling public mode on a hosted Railway instance must turn OFF all
+  // execution, rather than falling back to unmetered local development mode.
+  if (process.env.RAILWAY_PROJECT_ID && !publicDemoEnabled()) {
+    return Response.json(
+      { error: "Public execution is temporarily disabled." },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   // In public mode, enforce same-origin JSON requests and a tiny request body
   // before any CPU-intensive work or credits can be consumed.
   if (!isAllowedPublicDemoOrigin(request)) {
