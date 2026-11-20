@@ -16,7 +16,7 @@ describe("scenario catalog", () => {
     const scenarios = catalog.scenarios ?? [];
 
     expect(scenarios).toHaveLength(6);
-    expect(new Set(scenarios.map((scenario) => scenario.id)).size).toBe(4);
+    expect(new Set(scenarios.map((scenario) => scenario.id)).size).toBe(6);
   });
 
   it("resolves known scenarios and not unknown IDs", () => {
