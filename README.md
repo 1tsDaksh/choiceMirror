@@ -8,7 +8,7 @@ ChoiceMirror is my evidence-first tool for comparing the friction on opposite si
 
 I maintain this repository at [@1tsDaksh](https://github.com/1tsDaksh). The demo is live on Railway; the source, tests and validation records are available here.
 
-> **Scope:** The current product evaluates four original synthetic scenarios plus two fictional, historically informed cancellation case studies—not arbitrary websites. Differences in action counts do not establish intent, illegal conduct, or accessibility compliance.
+> **Scope:** The current product evaluates four original synthetic scenarios plus two variations of one fictional, historically informed cancellation case study—not arbitrary websites. Differences in action counts do not establish intent, illegal conduct, or accessibility compliance.
 
 ## Screenshots
 
@@ -22,7 +22,7 @@ I maintain this repository at [@1tsDaksh](https://github.com/1tsDaksh). The demo
 ## Try the live demo
 
 1. Open [ChoiceMirror](https://choicemirror-production.up.railway.app).
-2. Select **Join vs leave — asymmetric** or **Accept vs reject — asymmetric**. Balanced versions are available as controls.
+2. Select **Join vs leave — asymmetric**, **Accept vs reject — asymmetric**, or one of the two **OrbitPass** cancellation layouts. Balanced versions are available as controls.
 3. Choose **AI (Nebius)** to let the model observe each benchmark page and propose the next action. The web server validates each proposal before Playwright can execute it.
 4. Inspect the comparison dashboard: action counts, mirrored journey timelines, screenshots, model-reported decisions and the methodology behind the finding.
 
@@ -32,7 +32,20 @@ The hosted service uses a private server-side Nebius key. To protect credits and
 
 I added **OrbitPass**, a completely fictional streaming subscription interface informed by the FTC's historically documented concerns about multi-screen cancellations. Joining takes one action, whereas cancellation passes through five review, offer and confirmation steps. The counts must come from real recorded Playwright browser events.
 
-A reworded variation keeps the same underlying task but changes every call-to-action label. A deliberately brittle fixed-label script cannot traverse the changed copy without maintenance; the product's observation-driven navigation can be evaluated on that new page. **Mock-based CI is not real Nebius proof**. A separately gated real-model test records actual success or failure.
+A reworded variation preserves the goals and interaction count while changing all action labels and the desktop layout. A deliberately brittle fixed-label script cannot traverse that variation without maintenance; a maintained deterministic script can. I independently tested the observation-driven flow using **genuine Nebius `zai-org/GLM-5.3-Flash`**, not just a mocked endpoint.
+
+**Verified real-model results — 20 November 2026:** All **four of four** goal journeys completed on the two fictional pages. Each Join path took **1 recorded action** and each Cancel path took **5**.
+
+| Fictional OrbitPass page | Goal | Recorded actions | Genuine Nebius calls | PNG checkpoints | Result |
+| --- | --- | ---: | ---: | ---: | --- |
+| Reference layout | Join | 1 | 2 | 4 | Completed |
+| Reference layout | Cancel | 5 | 7 | 8 | Completed |
+| Reworded + rearranged layout | Join | 1 | 2 | 4 | Completed |
+| Reworded + rearranged layout | Cancel | 5 | 6 | 8 | Completed |
+
+**Evidence:** **17 real inference calls**, **10,958 input** / **1,880 output tokens**, **24 genuine browser PNGs**, and **zero rejected model proposals or model errors**. The [protected Actions run](https://github.com/1tsDaksh/choiceMirror/actions/runs/44837025110) passed, and its [evidence artifact](https://github.com/1tsDaksh/choiceMirror/actions/runs/44837025110/artifacts/14678592656) preserves the redacted results JSON and screenshots (30-day retention). See the [per-journey evidence report](docs/submission/CASE_STUDY_LIVE_RESULTS.md).
+
+This is **one successful controlled test per path**, not proof that AI always generalises, a population-level UX study, or evidence about a real external website.
 
 [Case study and experimental method](docs/submission/CASE_STUDY.md) · [FTC public source](https://www.ftc.gov/news-events/news/press-releases/2023/06/ftc-takes-action-against-amazon-enrolling-consumers-amazon-prime-without-consent-sabotaging-their)
 
@@ -130,7 +143,7 @@ The ratio uses `(max(actionsA, actionsB) + 1) / (min(actionsA, actionsB) + 1)`. 
 
 ## Limitations and responsible use
 
-- Current results apply only to **four synthetic benchmarks** with controlled starting conditions.
+- Current results apply only to **six controlled synthetic scenarios** (four original benchmarks and two OrbitPass variations), not external production sites.
 - Each displayed comparison is one pair of journeys; historical repeatability tests do not establish statistical performance on unseen sites.
 - No third-party websites, accounts, payment transactions or consequential user data are involved.
 - Model proposals may be wrong; the browser policy, completed-state checks and deterministic metrics provide independent constraints.

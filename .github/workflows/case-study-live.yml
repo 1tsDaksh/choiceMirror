@@ -2,12 +2,6 @@ name: Verify OrbitPass with genuine Nebius AI
 
 on:
   workflow_dispatch:
-  # Temporary, narrowly scoped one-time invocation from trusted main.
-  # Remove this trigger immediately after the requested evaluation.
-  push:
-    branches: [main]
-    paths:
-      - docs/submission/CASE_STUDY_RUN_REQUEST.md
 
 permissions:
   contents: read

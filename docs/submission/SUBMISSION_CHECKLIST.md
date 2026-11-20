@@ -14,6 +14,7 @@ This is the repository's concise publishing checklist. Tick items only after com
 - [x] Public service deployed to Railway with one replica, mounted `/data` volume and public HTTPS domain.
 - [x] Public journey completion confirmed by a browser test; comparison API and screenshots returned successfully.
 - [x] Technical validation, real-model test results and original screenshots recorded in `docs/submission/`.
+- [x] Genuine Nebius case-study and copy/layout variation completed **4/4** paths with **17 real model calls** and **24 verified screenshots** ([evidence report](CASE_STUDY_LIVE_RESULTS.md), [successful run](https://github.com/1tsDaksh/choiceMirror/actions/runs/44837025110)).
 - [ ] Save the JSON from a public AI comparison confirming `comparison.mode: "ai"`, two `completed` journeys and nonzero per-journey `ai.inferenceCalls` (historical credentialed runs are already documented).
 - [ ] Open the demo and example comparison from a fresh, logged-out browser shortly before submission; check screenshots and quota messaging.
 - [ ] Confirm Railway and Nebius usage budgets are adequate for judging.

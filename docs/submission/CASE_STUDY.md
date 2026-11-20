@@ -32,7 +32,20 @@ A credential-free E2E test uses a **mocked Nebius-compatible adapter** to prove 
 
 For real model evidence, use the opt-in `tests/live/case-study.spec.ts` test. It requires `NEBIUS_LIVE=1`, `NEBIUS_CASE_STUDY=1` and a private `NEBIUS_API_KEY` and tests two goals on each interface, recording actual status, count, inference calls and errors. The [manual protected workflow](../../.github/workflows/case-study-live.yml) executes only on trusted main and never on pull requests.
 
-**Real-model results are pending until this test succeeds.** Report failures and rejected proposals without relabelling them as success.
+### Genuine model result — verified 20 November 2026
+
+The protected [GitHub Actions run #44837025110](https://github.com/1tsDaksh/choiceMirror/actions/runs/44837025110) **passed** using real Nebius Token Factory `zai-org/GLM-5.3-Flash`, with no mock endpoint. The recorded outcomes were **4/4 completed**, with **17 inference calls**, **24 stored PNG screenshots**, **10,958 input tokens** and **1,880 output tokens**. Every journey had **zero rejected proposals and zero model errors**. All 24 PNG payloads matched their saved SHA-256 hashes.
+
+| Synthetic fixture | Goal | Actual actions | Calls | PNGs | Result |
+| --- | --- | ---: | ---: | ---: | --- |
+| Reference | Join | 1 | 2 | 4 | Completed |
+| Reference | Cancel | 5 | 7 | 8 | Completed |
+| Reworded/rearranged | Join | 1 | 2 | 4 | Completed |
+| Reworded/rearranged | Cancel | 5 | 6 | 8 | Completed |
+
+The [full evidence manifest](CASE_STUDY_LIVE_RESULTS.md) includes run and artifact IDs, model provenance, token usage and archive checksum; the [GitHub Actions artifact](https://github.com/1tsDaksh/choiceMirror/actions/runs/44837025110/artifacts/14678592656) has the genuine screenshot checkpoints and redacted results JSON, retained until **20 December 2026**.
+
+**Interpretation:** For this particular fictional pair and rewording/layout variation, the genuine model completed both routes without updating a fixed action plan. A maintained Playwright script also succeeds. A single successful run of each path does **not** establish statistically reliable superiority, generalisation to arbitrary external sites or evidence of a current real-world legal violation.
 
 ## How to reproduce
 

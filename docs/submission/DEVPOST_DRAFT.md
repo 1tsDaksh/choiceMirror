@@ -18,7 +18,7 @@ ChoiceMirror runs the two sides of a choice in controlled browser sessions and m
 
 I created four original synthetic scenarios: **membership** (join / leave) and **consent** (accept / reject), each with **balanced** and **asymmetric** versions. They give the tool a meaningful positive control: it should report equality when the paths are equal, rather than always manufacturing a finding.
 
-The fictional OrbitPass case study adds a realistic subscription journey informed by the FTC's historical description of multi-page cancellation, with a semantically equivalent reworded variant. The pages are original synthetic examples, not a reproduction of any real company's current service. The reworded variant can distinguish a brittle fixed-selector baseline from observation-driven navigation; real Nebius results will be reported only after genuine model inference is verified.
+The fictional OrbitPass case study adds a realistic subscription journey informed by the FTC's historical description of multi-page cancellation, with a semantically equivalent reworded variant. The pages are original synthetic examples, not a reproduction of any real company's current service. The reworded variant distinguishes a brittle fixed-selector baseline from observation-driven navigation: the unchanged reference script fails on the changed wording, while an updated deterministic script succeeds. In a separately protected **genuine Nebius** test on 20 November 2026, **all four synthetic Join/Cancel journeys completed** on the reference and reworded/rearranged layouts, with **17 real model calls and 24 PNG checkpoints**. This demonstrates one successful controlled trial per path, not superiority to maintained scripts or general-purpose website auditing. [Actual inference evidence](CASE_STUDY_LIVE_RESULTS.md).
 
 After both journeys finish, the comparison dashboard displays their action counts, difference, ratio, mirrored timelines and original screenshots. Every finding links back to the evidence used to calculate it. If a run is incomplete or corrupt, the system reports insufficient evidence rather than pretending the two sides were equally easy.
 
@@ -66,10 +66,10 @@ I also learned that a balanced result matters. A system that only reports proble
 
 ## What's next
 
-I would extend the controlled benchmark library, evaluate repeated runs with more robust uncertainty estimates, and explore permissioned use on staging websites. Future work could add subscriptions, trial cancellation and preference-management examples, along with evidence exports for UX research.
+I would extend the controlled benchmark library, evaluate repeated runs with more robust uncertainty estimates, and explore permissioned use on staging websites. Future work could add more cancellation and preference-management patterns, along with evidence exports for UX research.
 
 ## Responsible AI and limitations
 
-ChoiceMirror currently works on **four synthetic benchmark interfaces**. It does not audit external websites, take actions on real accounts, or determine whether a business is breaking any law. A single action-count difference is descriptive, **not proof of dark-pattern intent**. Model explanations are labelled as unverified, and latency is not confused with human UX burden. The published demo is intentionally bounded so external visitors cannot spend unlimited Nebius credits or submit arbitrary URLs.
+ChoiceMirror currently works on **six controlled synthetic scenarios**: four original benchmark interfaces and two OrbitPass variations. It does not audit external websites, take actions on real accounts, or determine whether a business is breaking any law. A single action-count difference is descriptive, **not proof of dark-pattern intent**. Model explanations are labelled as unverified, and latency is not confused with human UX burden. The published demo is intentionally bounded so external visitors cannot spend unlimited Nebius credits or submit arbitrary URLs.
 
 **Repository and verification:** [Source](https://github.com/1tsDaksh/choiceMirror) · [Real-model evaluation](LIVE_TEST_RESULTS.md) · [Security review](SECURITY_REVIEW.md) · [Screenshot provenance](assets/PROVENANCE.md).
