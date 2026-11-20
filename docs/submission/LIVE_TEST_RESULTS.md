@@ -1,4 +1,4 @@
-# LIVE_TEST_RESULTS — Phase 5 real Nebius inference
+# ChoiceMirror — real Nebius inference and repeatability results
 
 > Every number in this document came from a run executed on **2026-11-18** against the real Nebius Token Factory API. No measured value here is simulated or copied from fixture expectations. Fixture expected counts appear only in a clearly labelled *expected (fixture)* validation column.
 
@@ -70,7 +70,7 @@ Verbatim top-level fields of the suite's `[live-eval]` output (the `statuses` ar
 }
 ```
 
-### Failure classification sweep (spec §4.3)
+### Failure classification sweep 
 
 `auth` · `credits` · `model-unavailable` · `rate-limit` · `timeout` · `network` · `malformed` · `budget` · `api` · `assertion` → **none observed in this run.**
 
@@ -80,14 +80,14 @@ Verbatim top-level fields of the suite's `[live-eval]` output (the `statuses` ar
 - The actual action counts equal the fixture expectations (join 1 / leave 3 / accept 1 / reject 3 in the asymmetric variants; 1/1 in the balanced variants). That is *validation against fixtures*, recorded as actual-vs-expected — not an independent difficulty claim.
 - Aggregate rows count only journeys that genuinely completed; nothing is pre-filled.
 
-## 5. UI end-to-end AI runs (spec §5) — PASS
+## 5. UI end-to-end AI runs  — PASS
 
 **Recorded in `VALIDATION_REPORT.md` §8.4** — the single authoritative UI run log (runs
 `cmp_04cbef31ed3a44c7` membership-asymmetric, join 1 / leave 3, difference 2, both actual
 = expected; `cmp_dfe25737c0937557` membership-balanced, join 1 / leave 1, difference 0;
 both stored records `"mode":"ai"`, `"status":"completed"`; no retries, no anomalies).
 
-## 6. Bounded live repeatability (spec §6) — PASS
+## 6. Bounded live repeatability  — PASS
 
 **Run:** 2026-11-18 · `tests/live/repeatability.spec.ts` · exit code **0** · `1 passed (2.9m)` · webServer `next dev -p 3001` (reused dev server) · no retries · single attempt (no early stop — the full 12-pair target was attempted and completed in one run).
 
@@ -141,7 +141,7 @@ both stored records `"mode":"ai"`, `"status":"completed"`; no retries, no anomal
 }
 ```
 
-### Variation narrative (actual, spec §6)
+### Variation narrative (actual measurements)
 
 - **Action-count consistency per scenario × goal across the 3 rounds:** every one of the 8 scenario × goal combinations produced a **single unique action count across all 3 rounds** — join 1, leave 1 (balanced) / 3 (asymmetric), accept 1, reject 1 (balanced) / 3 (asymmetric). Zero count drift round-to-round in this run: for each goal, `actionCountConsistency` is a one-element array, i.e. rounds 1, 2 and 3 all executed the same number of actions. The consistent counts also equal the fixture expectations from §4.2 (that is *validation against fixtures*, not an independent difficulty claim).
 - **Error list:** `errors: []` — no journey in any round reported an error; every journey reached the model (`inferenceCalls ≥ 1` assertion held for all 24).
@@ -164,5 +164,5 @@ both stored records `"mode":"ai"`, `"status":"completed"`; no retries, no anomal
 ### Honesty notes
 
 - Every number above is transcribed verbatim from the run's `[live-repeat]` output; the 12-pair/24-journey figures are both the plan's target and this run's actual attempted/completed counts (the run finished the full sweep — no early stop, no retries, single attempt, exit 0 first try).
-- No confidence intervals are computed (spec §6); consistency is reported as unique-count arrays per scenario × goal, exactly as the suite emits them.
+- No confidence intervals are computed ; consistency is reported as unique-count arrays per scenario × goal, exactly as the suite emits them.
 - The suite's own assertions are honest smoke only (every journey reached the model; ≥1 genuine completion) — repeatability itself is *reported*, not hard-asserted, so a future drift case still prints its data.

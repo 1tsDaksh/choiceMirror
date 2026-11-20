@@ -1,20 +1,11 @@
-# Security & reliability audit — spec §7 (Phase 5 plan Task 4)
+# ChoiceMirror — security and reliability validation
 
-> Focused audit of the §7 bullets (browser security, AI security, evidence
-> integrity, reliability) performed on 2026-11-18 at commit `5167e54`
-> (branch `feat/phase-5-final-validation`). Method: every bullet was mapped to
-> existing test/code evidence first; bullets without test coverage were then
-> probed with throwaway, credential-free probes (not committed). No source
-> file was modified in this audit — genuine defects would have been numbered
-> below and left for Task 5's TDD fix loop. No credentialed command was run
-> and no environment file was opened.
+**Date:** 18 November 2026 (historical local verification).  
+**Scope:** Browser origin restrictions, model-action policy, evidence integrity, failure handling and credential containment.
 
-**Result: no defects found; 4 probe runs across 3 probes** (P1 unit-suite
-re-run; P2 service-worker behaviour, 2 runs; P3 cross-run context isolation).
-Two non-defect observations are recorded at the end with reasoning, so nothing
-is hidden from Task 5's discretionary hardening pass.
+This report records the project's security checks against the implemented code and local test suites. It preserves the original **30/30 verification checklist** and direct code/test references. Later public-deployment controls are described separately in [Railway operations](PUBLIC_DEMO_DEPLOYMENT.md) and in `apps/web/lib/public-demo-guard.test.ts`.
 
----
+**Result:** The review found **no blocking defects** under its stated local scope. The verification included a complete credential-free unit suite (**212 tests across 31 files**) and targeted service-worker and cross-journey browser probes. These results do not constitute a comprehensive independent penetration test or proof of safety on untrusted external sites.
 
 ## Method
 
@@ -69,7 +60,7 @@ is hidden from Task 5's discretionary hardening pass.
 
 ## Browser security
 
-| Spec §7 bullet | Verdict |
+| Security requirement | Verdict |
 |---|---|
 | The exact-origin allowlist remains enforced | VERIFIED (evidence: `tests/e2e/origin-guard.spec.ts:64,106,136`; `packages/browser-runner/src/allowlist.test.ts:12,18,27`; code path `driver.ts:183-188` refuses off-origin navigation + `runner.ts:192-194` post-navigate re-check + `packages/browser-runner/src/observation.test.ts:44,54` blocked-URL observation) |
 | External requests are blocked before leaving the browser | VERIFIED (evidence: `origin-guard.spec.ts:64` "an off-origin subresource request is prevented before leaving the browser" — external server recorded 0 hits; `driver.ts:45-62` context route aborts unallowed requests in the browser; `allowlist.test.ts:49` fail-closed) |
@@ -81,7 +72,7 @@ is hidden from Task 5's discretionary hardening pass.
 
 ## AI security
 
-| Spec §7 bullet | Verdict |
+| Security requirement | Verdict |
 |---|---|
 | Only permitted structured actions execute | VERIFIED (evidence: `packages/contracts/src/agent.ts:22-32` `actionProposalSchema` — click/stop only, `targetId` must be `element-N`; `packages/browser-runner/src/ai-runner.ts:243` safeParse before any policy evaluation; `packages/contracts/src/agent.test.ts:112` "rejects actions outside click and stop", `:141` malformed target ids; execution clicks only observation-bound handles `driver.ts:351-376`) |
 | Invalid actions are rejected | VERIFIED (evidence: `packages/contracts/src/policy.ts:20-46` `validateProposal` + `policy.test.ts:55,67,78,86,98,109,120,129` (wrong goal, reset button, absent/disabled target, stop always allowed); `ai-runner.test.ts:249,276,295` wrong-goal rejection → feedback → rejection-budget failure → schema-invalid rejection; `tests/e2e/element-binding.spec.ts:82` unknown/malformed ids rejected before any click) |
@@ -93,7 +84,7 @@ is hidden from Task 5's discretionary hardening pass.
 
 ## Evidence integrity
 
-| Spec §7 bullet | Verdict |
+| Security requirement | Verdict |
 |---|---|
 | Every finding references real evidence | VERIFIED (evidence: `packages/metrics/src/evidence-validation.ts:10-50` checks journey ids, step numbers and screenshot ids against the stored detail; `evidence-validation.test.ts:101,123,145` unknown journey/step/screenshot rejected; `findings.test.ts:299` citations only reference existing events; validation failure degrades the report `packages/metrics/src/report.ts:78-100` — `report.test.ts:95`) |
 | No comparative differences appear for incomparable journeys | VERIFIED (evidence: `packages/metrics/src/comparison-metrics.ts:44-100` — differences only when both completed with counts and zero comparability reasons; `comparison-metrics.test.ts:142,160,175,186` failed/missing/running/mismatched-condition cases; `tests/e2e/dashboard.spec.ts:312` mismatched seeds withhold the difference while keeping raw counts) |
@@ -105,7 +96,7 @@ is hidden from Task 5's discretionary hardening pass.
 
 ## Reliability
 
-| Spec §7 bullet | Verdict |
+| Security requirement | Verdict |
 |---|---|
 | Concurrent comparison requests | VERIFIED (evidence: `apps/web/app/api/comparisons/route.ts:95-100` synchronous atomic `tryReserveRun` check-and-set before the first await; `route.test.ts:157` "accepts exactly one of two concurrent start requests" + `:144` 429 + `:175` reservation released on save failure; `tests/e2e/phase-2.spec.ts:232` one 202 / one 429 end-to-end; `run-comparison.test.ts:237` guard held for the whole execution) |
 | Missing or corrupted files | VERIFIED (evidence: `file-store.ts:55-71` ENOENT → null, corrupt → null + warn; `file-store.test.ts:61,67,123`; API 404s for unknown/corrupt records — `[id]/route.test.ts:99,108,117`; UI honest states — `tests/e2e/dashboard.spec.ts:287`, `tests/e2e/phase-1.spec.ts:336` "missing comparison IDs show an honest unavailable state") |
@@ -124,9 +115,9 @@ is hidden from Task 5's discretionary hardening pass.
 **No defects found.** 30 of 30 §7 bullets verified against existing test
 evidence or targeted code paths; 4 probe runs across 3 probes (P1 unit-suite
 re-run — 212/212 green; P2 service-worker behaviour ×2 runs; P3 context
-isolation). Nothing is deferred to Task 5.
+isolation). No blocking defects were deferred by this review.
 
-## Observations (recorded for transparency — not defects under spec §7)
+## Observations (recorded for transparency — not defects under security checklist)
 
 1. **Trace-event `detail`, `journey.error`, and `label` are unbounded at the
    schema level.** `packages/contracts/src/evidence.ts:30` types trace
@@ -170,4 +161,4 @@ isolation). Nothing is deferred to Task 5.
   material appears anywhere in this document.
 - Out-of-scope areas (authentication, payments, additional providers,
   third-party crawling) were not audited — they do not exist in the product
-  (spec §2 scope).
+  (the controlled benchmark scope).
