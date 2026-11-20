@@ -59,6 +59,9 @@ process.on("uncaughtException", (error) => {
 
 start("benchmark", "benchmark", ["-p", "3001", "-H", "127.0.0.1"], {
   PORT: "3001",
+  // The synthetic fixture service never needs to see model credentials.
+  NEBIUS_API_KEY: "",
+  PUBLIC_DEMO_HASH_SECRET: "",
 });
 start("web", "web", ["-p", String(port), "-H", "0.0.0.0"], {
   PORT: String(port),
