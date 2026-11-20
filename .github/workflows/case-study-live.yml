@@ -2,9 +2,19 @@ name: Verify OrbitPass with genuine Nebius AI
 
 on:
   workflow_dispatch:
+  # Temporary, narrowly scoped one-time invocation from trusted main.
+  # Remove this trigger immediately after the requested evaluation.
+  push:
+    branches: [main]
+    paths:
+      - docs/submission/CASE_STUDY_RUN_REQUEST.md
 
 permissions:
   contents: read
+
+concurrency:
+  group: orbitpass-genuine-nebius
+  cancel-in-progress: false
 
 jobs:
   actual-nebius-case-study:
@@ -22,20 +32,28 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Install Chromium
+      - name: Install Chromium with system libraries
         run: pnpm exec playwright install --with-deps chromium
-      - name: Check private key
+      - name: Check protected Nebius secret is present
         shell: bash
         env:
           NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
         run: |
           if [[ -z "$NEBIUS_API_KEY" ]]; then
-            echo "::error::Configure NEBIUS_API_KEY as a protected Actions secret."
+            echo "::error::Configure NEBIUS_API_KEY in GitHub Actions secrets."
             exit 1
           fi
-      - name: Test genuine model navigation on both fictional interfaces
+      - name: Run genuine model on reference and reworded fictional fixtures
         env:
           NEBIUS_LIVE: "1"
           NEBIUS_CASE_STUDY: "1"
           NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
         run: pnpm exec playwright test --config playwright.live.config.ts tests/live/case-study.spec.ts
+      - name: Preserve redacted run metadata and real PNG screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbitpass-genuine-nebius-evidence
+          path: test-results/case-study-live/
+          if-no-files-found: warn
+          retention-days: 30
