@@ -11,10 +11,10 @@ This is the repository's concise publishing checklist. Tick items only after com
 - [x] Public working website: https://choicemirror-production.up.railway.app
 - [x] Source code and setup: https://github.com/1tsDaksh/choiceMirror
 - [x] Real Nebius execution implemented with server-side credentials, approved benchmark-only navigation and usage limits.
-- [x] Public service deployed to Railway with one replica, mounted \`/data\` volume and public HTTPS domain.
+- [x] Public service deployed to Railway with one replica, mounted `/data` volume and public HTTPS domain.
 - [x] Public journey completion confirmed by a browser test; comparison API and screenshots returned successfully.
-- [x] Technical validation, real-model test results and original screenshots recorded in \`docs/submission/\`.
-- [ ] Save the JSON from a public AI comparison confirming \`comparison.mode: "ai"\`, two \`completed\` journeys and nonzero per-journey \`ai.inferenceCalls\` (historical credentialed runs are already documented).
+- [x] Technical validation, real-model test results and original screenshots recorded in `docs/submission/`.
+- [ ] Save the JSON from a public AI comparison confirming `comparison.mode: "ai"`, two `completed` journeys and nonzero per-journey `ai.inferenceCalls` (historical credentialed runs are already documented).
 - [ ] Open the demo and example comparison from a fresh, logged-out browser shortly before submission; check screenshots and quota messaging.
 - [ ] Confirm Railway and Nebius usage budgets are adequate for judging.
 

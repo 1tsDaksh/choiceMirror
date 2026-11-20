@@ -26,7 +26,7 @@ After both journeys finish, the comparison dashboard displays their action count
 
 I structured ChoiceMirror as a TypeScript monorepo with Next.js and React for the interface, Playwright for browser execution, Zod for typed validation, and a separate pure metrics package.
 
-The navigation model is **Nebius Token Factory's \`zai-org/GLM-5.3-Flash\`**. For each goal, it receives an observation of the current benchmark page and proposes a structured action. It **cannot directly control the browser**. Before execution, a fixed schema and policy gate verify that the proposed element exists, is allowed and belongs to the selected journey. Playwright then executes the validated click inside an isolated browser context.
+The navigation model is **Nebius Token Factory's `zai-org/GLM-5.3-Flash`**. For each goal, it receives an observation of the current benchmark page and proposes a structured action. It **cannot directly control the browser**. Before execution, a fixed schema and policy gate verify that the proposed element exists, is allowed and belongs to the selected journey. Playwright then executes the validated click inside an isolated browser context.
 
 I deliberately separate three things:
 

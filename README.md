@@ -17,7 +17,7 @@ I maintain this repository at [@1tsDaksh](https://github.com/1tsDaksh). The demo
 3. Choose **AI (Nebius)** to let the model observe each benchmark page and propose the next action. The web server validates each proposal before Playwright can execute it.
 4. Inspect the comparison dashboard: action counts, mirrored journey timelines, screenshots, model-reported decisions and the methodology behind the finding.
 
-The hosted service uses a private server-side Nebius key. To protect credits and keep runs reproducible, the public demo limits usage to **12 AI comparison requests per UTC day**, **30 total comparisons per day**, **3 requests per visitor**, and **one running comparison at a time** by default. Visitors cannot provide arbitrary URLs or prompts. These limits may cause a temporary \`429\` response; [the verified recording workflow](docs/submission/VIDEO_RECORDING.md) offers an alternative walkthrough.
+The hosted service uses a private server-side Nebius key. To protect credits and keep runs reproducible, the public demo limits usage to **12 AI comparison requests per UTC day**, **30 total comparisons per day**, **3 requests per visitor**, and **one running comparison at a time** by default. Visitors cannot provide arbitrary URLs or prompts. These limits may cause a temporary `429` response; [the verified recording workflow](docs/submission/VIDEO_RECORDING.md) offers an alternative walkthrough.
 
 ## Example results
 
@@ -34,7 +34,7 @@ An earlier eight-journey real-model evaluation completed **8/8 journeys** with *
 
 ## How it works
 
-\`\`\`text
+```text
 Scenario selection
     ↓
 Two opposing goals from matched starting conditions
@@ -48,44 +48,44 @@ Playwright clicks the approved element in an isolated browser
 Events, model metadata and real PNG screenshots are recorded
     ↓
 Deterministic metrics + evidence-linked comparison dashboard
-\`\`\`
+```
 
 The model **proposes** actions; it does not execute arbitrary code or decide whether the interface is unfair. A fixed policy restricts actions to observed controls on the local benchmark origin. The metrics engine calculates differences from actual browser events. If either journey fails, is incomplete, or has invalid evidence, comparative metrics are withheld rather than fabricated.
 
-**Stack:** TypeScript, Next.js, React, Tailwind CSS, Playwright Chromium, Zod, Vitest, pnpm, Nebius Token Factory (\`zai-org/GLM-5.3-Flash\`), Docker and Railway. The model and third-party dependencies are identified explicitly; their inclusion does not imply that model output is verified fact.
+**Stack:** TypeScript, Next.js, React, Tailwind CSS, Playwright Chromium, Zod, Vitest, pnpm, Nebius Token Factory (`zai-org/GLM-5.3-Flash`), Docker and Railway. The model and third-party dependencies are identified explicitly; their inclusion does not imply that model output is verified fact.
 
 ## Local development
 
 **Prerequisites:** Node.js 25+, pnpm 12.18.0 and Playwright Chromium.
 
-\`\`\`bash
+```bash
 git clone https://github.com/1tsDaksh/choiceMirror.git
 cd choiceMirror
 npm install --global pnpm@12.18.0
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
 pnpm dev
-\`\`\`
+```
 
 Open the app at **http://localhost:3000** and the synthetic benchmark at **http://localhost:3001**. Deterministic comparisons work without credentials.
 
-To run real AI locally, create **\`apps/web/.env.local\`** (gitignored) and set \`NEBIUS_API_KEY\` using the private key from Nebius Token Factory. The default model is \`zai-org/GLM-5.3-Flash\`. Never put a key in a browser environment variable, source file, issue, or pull request.
+To run real AI locally, create **`apps/web/.env.local`** (gitignored) and set `NEBIUS_API_KEY` using the private key from Nebius Token Factory. The default model is `zai-org/GLM-5.3-Flash`. Never put a key in a browser environment variable, source file, issue, or pull request.
 
 | Command | Purpose |
 | --- | --- |
-| \`pnpm dev\` | Run the web and benchmark servers |
-| \`pnpm typecheck\` | Validate TypeScript |
-| \`pnpm lint\` | Run lint checks |
-| \`pnpm test:unit\` | Unit tests |
-| \`pnpm test:e2e\` | Playwright tests, including a local mock model; no paid inference |
-| \`pnpm build\` | Build both Next.js applications |
-| \`pnpm test:live\` | Optional live Nebius tests; requires \`NEBIUS_LIVE=1\` and \`NEBIUS_API_KEY\` in the test process environment |
+| `pnpm dev` | Run the web and benchmark servers |
+| `pnpm typecheck` | Validate TypeScript |
+| `pnpm lint` | Run lint checks |
+| `pnpm test:unit` | Unit tests |
+| `pnpm test:e2e` | Playwright tests, including a local mock model; no paid inference |
+| `pnpm build` | Build both Next.js applications |
+| `pnpm test:live` | Optional live Nebius tests; requires `NEBIUS_LIVE=1` and `NEBIUS_API_KEY` in the test process environment |
 
-The optional repeatability suite additionally requires \`NEBIUS_LIVE_REPEAT=1\` and consumes real API credits. CI does **not** require or spend a Nebius key.
+The optional repeatability suite additionally requires `NEBIUS_LIVE_REPEAT=1` and consumes real API credits. CI does **not** require or spend a Nebius key.
 
 ## Codebase
 
-\`\`\`text
+```text
 apps/web/              Public app, comparison API and evidence dashboard
 apps/benchmark/        Synthetic membership and consent fixtures
 packages/contracts/   Zod schemas, scenario catalog and action policy
@@ -97,9 +97,9 @@ tests/e2e/            Browser acceptance tests
 tests/live/           Opt-in real-model evaluation
 docs/                 Architecture, product and design references
 docs/submission/      Demonstration, verification and submission materials
-\`\`\`
+```
 
-On Railway, the web app and private loopback-only benchmark share a **single long-running container**. Comparison records, screenshots and daily usage counts live on a persistent \`/data\` volume. The one-replica restriction is intentional: the current runner and quota guard are single-process. See [deployment and operations](docs/submission/PUBLIC_DEMO_DEPLOYMENT.md).
+On Railway, the web app and private loopback-only benchmark share a **single long-running container**. Comparison records, screenshots and daily usage counts live on a persistent `/data` volume. The one-replica restriction is intentional: the current runner and quota guard are single-process. See [deployment and operations](docs/submission/PUBLIC_DEMO_DEPLOYMENT.md).
 
 ## Reading the evidence
 
@@ -109,7 +109,7 @@ A completed comparison has a header identifying its scenario and execution mode,
 - **Calculated:** successful-click counts, differences and action-burden ratios.
 - **Model-reported:** the AI's proposed action and justification, labelled as such.
 
-The ratio uses \`(max(actionsA, actionsB) + 1) / (min(actionsA, actionsB) + 1)\`. It is a descriptive measure for a completed pair, not a manipulation score. Model latency, backtracking and interruptions are not treated as human effort or invented when unobserved.
+The ratio uses `(max(actionsA, actionsB) + 1) / (min(actionsA, actionsB) + 1)`. It is a descriptive measure for a completed pair, not a manipulation score. Model latency, backtracking and interruptions are not treated as human effort or invented when unobserved.
 
 ## Limitations and responsible use
 

@@ -1,12 +1,6 @@
 name: Record real ChoiceMirror desktop video
 
 on:
-  # Explicit trigger only: after the owner securely configures the Actions secret,
-  # committing this request file on trusted main starts REAL Nebius video capture.
-  push:
-    branches: [main]
-    paths:
-      - "docs/submission/AI_VIDEO_RECORD_REQUEST.txt"
   pull_request:
     paths:
       - ".github/workflows/demo-video.yml"
@@ -32,8 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      # PR previews NEVER receive secrets. Only trusted main push with explicit marker or manual dispatch can spend credits.
-      DEMO_MODE: ${{ github.event_name == 'pull_request' && 'deterministic' || github.event_name == 'push' && 'ai' || inputs.mode }}
+      # PR previews never receive secrets. Only manual runs on main use live Nebius credits.
+      DEMO_MODE: ${{ github.event_name == 'pull_request' && 'deterministic' || inputs.mode }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
