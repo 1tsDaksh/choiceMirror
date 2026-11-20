@@ -28,8 +28,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/cm-public-volume"
           docker run -d --name choicemirror-public-test -p 3000:3000 \
-            -e PUBLIC_DEMO_ENABLED=0 -e PORT=3000 \
+            -v "$RUNNER_TEMP/cm-public-volume:/data" \
+            -e PUBLIC_DEMO_ENABLED=1 -e PORT=3000 \
+            -e RAILWAY_PROJECT_ID=ci-public-demo \
+            -e RAILWAY_VOLUME_MOUNT_PATH=/data \
+            -e CHOICEMIRROR_DATA_DIR=/data \
+            -e NEBIUS_API_KEY=ci-test-only-never-valid \
+            -e PUBLIC_DEMO_HASH_SECRET=ci-private-test-secret \
+            -e PUBLIC_DEMO_DAILY_TOTAL_LIMIT=2 \
+            -e PUBLIC_DEMO_DAILY_AI_LIMIT=1 \
+            -e PUBLIC_DEMO_DAILY_VISITOR_LIMIT=1 \
             choicemirror-public-smoke
           trap 'docker logs choicemirror-public-test || true; docker rm -f choicemirror-public-test || true' EXIT
           ready=false
@@ -46,6 +56,7 @@ jobs:
           fi
           cat /tmp/cm-health.json
           curl -fsS -X POST "http://127.0.0.1:3000/api/comparisons" \
+            -H "origin: http://127.0.0.1:3000" \
             -H "content-type: application/json" \
             -d '{"scenarioId":"membership-balanced","goalIds":["join","leave"],"mode":"deterministic"}' \
             > /tmp/cm-result.json
@@ -69,4 +80,29 @@ jobs:
             echo "::error::Docker comparison did not complete."
             exit 1
           fi
-          echo "Verified real local Playwright comparison on packaged Railway image."
+          # Same visitor is now limited: quota persists inside the mounted volume.
+          response=$(curl -sS -o /tmp/cm-second.json -w "%{http_code}" -X POST \
+            "http://127.0.0.1:3000/api/comparisons" \
+            -H "origin: http://127.0.0.1:3000" \
+            -H "content-type: application/json" \
+            -d '{"scenarioId":"membership-balanced","goalIds":["join","leave"],"mode":"deterministic"}')
+          if [ "$response" != 429 ]; then
+            echo "::error::Persistent daily visitor quota was bypassed ($response)."
+            exit 1
+          fi
+          echo "Quota correctly blocked second comparison."
+          # A third-party Origin must not be allowed to spend the owner's credits.
+          response=$(curl -sS -o /tmp/cm-foreign.json -w "%{http_code}" -X POST \
+            "http://127.0.0.1:3000/api/comparisons" \
+            -H "origin: https://evil.example" \
+            -H "content-type: application/json" \
+            -d '{"scenarioId":"membership-balanced","goalIds":["join","leave"],"mode":"ai"}')
+          if [ "$response" != 403 ]; then
+            echo "::error::Cross-origin public POST was not rejected ($response)."
+            exit 1
+          fi
+          if curl -fsS http://127.0.0.1:3000/ | grep -F 'ci-test-only-never-valid'; then
+            echo "::error::Server-side model secret was exposed in HTML."
+            exit 1
+          fi
+          echo "Verified packaged Chromium run, private key, persistent limit and origin protection."
