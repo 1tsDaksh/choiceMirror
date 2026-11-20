@@ -9,7 +9,7 @@ ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-RUN corepack enable && corepack prepare pnpm@12.18.0 --activate
+RUN npm install --global pnpm@12.18.0
 
 COPY . .
 RUN pnpm install --frozen-lockfile
