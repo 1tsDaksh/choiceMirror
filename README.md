@@ -2,6 +2,16 @@
 
 **See both sides of the click.**
 
+> **Public AI demo launch (in preparation):** A single-container Railway deployment
+> with a private benchmark, real Nebius inference **server-side**, strict
+> per-visitor and persisted daily run limits, and a private API key.
+> [Deployment steps](docs/submission/PUBLIC_DEMO_DEPLOYMENT.md).
+> **This change does not mean a public URL is already live.** It still requires
+> owner-configured Railway volume/variables and verification from an external
+> browser. The [genuine silent AI video](https://github.com/1tsDaksh/choiceMirror/actions/runs/44538869335)
+> is already verified, with a separate timestamped voiceover script.
+
+
 ChoiceMirror is an AI-powered behavioural UX auditor for **SLAY HACKS 2026**. It compares opposing user journeys on the same interface—such as **join vs leave** or **accept vs reject**—and is designed to show measurable friction with inspectable browser evidence.
 
 > **Status (18 November 2026):** Phases 1–4 and Phase 5 technical validation/submission preparation are merged. Real Nebius-backed navigation has been tested on the four controlled scenarios, and the evidence dashboard is functional. **Devpost submission remains pending:** team/eligibility checks, organiser clarifications, an accessible working demo or video, and owner approval. See the [submission checklist](docs/submission/SUBMISSION_CHECKLIST.md).

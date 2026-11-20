@@ -12,6 +12,9 @@ export const metadata: Metadata = {
     "Compare opposing user journeys with inspectable browser evidence.",
 };
 
+// Public demo configuration is supplied at runtime by Railway, not at build time.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,7 +32,7 @@ export default function RootLayout({
               Choice<span className="text-journey-a">Mirror</span>
             </Link>
             <span className="rounded-full border border-highlight/40 bg-highlight/10 px-3 py-1 text-xs font-medium text-highlight">
-              Phase 2 local runner
+              {process.env.PUBLIC_DEMO_ENABLED === "1" ? "Live · controlled demo" : "Evidence-first prototype"}
             </span>
           </div>
         </header>
@@ -37,8 +40,8 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="mx-auto max-w-7xl border-t border-white/10 px-4 py-6 text-sm text-secondary-text sm:px-6">
-          Evidence-first comparisons. Runs execute locally against the
-          benchmark app.
+          Evidence-first comparisons on controlled synthetic benchmarks. Results
+          are not proof of intent, manipulation or regulatory noncompliance.
         </footer>
       </body>
     </html>
