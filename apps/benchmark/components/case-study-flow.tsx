@@ -50,7 +50,7 @@ export function CaseStudyFlow({ scenario, seed }: Props) {
           </span>
         </header>
         <div className="grid gap-6 p-5 sm:p-7 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-          <div className="space-y-5">
+          <div className={variant ? "space-y-5 md:order-2" : "space-y-5"}>
             <div className="space-y-2">
               <p className="font-mono text-xs uppercase tracking-widest text-journey-a">Synthetic case study · documented historical pattern</p>
               <h1 className="text-2xl font-bold">Membership dashboard</h1>
@@ -122,7 +122,7 @@ export function CaseStudyFlow({ scenario, seed }: Props) {
               </button>
             </section>
           </div>
-          <aside className="space-y-4 rounded-xl border border-white/10 bg-canvas/40 p-5">
+          <aside className={variant ? "space-y-4 rounded-xl border border-white/10 bg-canvas/40 p-5 md:order-1" : "space-y-4 rounded-xl border border-white/10 bg-canvas/40 p-5"}>
             <p className="font-mono text-xs uppercase tracking-widest text-journey-a">Your subscription</p>
             <h3 className="text-lg font-semibold">{step?.goalId === "leave" && !step.complete ? panel.heading : "Member benefits"}</h3>
             <p className="text-sm text-secondary-text">
