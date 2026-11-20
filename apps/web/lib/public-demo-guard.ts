@@ -96,8 +96,20 @@ export function isAllowedPublicDemoOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
   if (!origin) return false;
   try {
-    const expected = new URL(request.url);
-    return new URL(origin).origin === expected.origin;
+    const sent = new URL(origin);
+    // A reverse proxy/Next production server can reconstruct request.url as
+    // localhost even though the user reached an external HTTPS hostname.
+    // Check the actual incoming Host instead; browsers cannot forge Host.
+    const host = request.headers.get("host");
+    if (!host || sent.host.toLowerCase() !== host.toLowerCase()) return false;
+
+    // Railway terminates TLS at its edge and forwards the original scheme.
+    // Without a proxy protocol header, fall back to the request protocol.
+    const forwardedProto = request.headers.get("x-forwarded-proto");
+    const scheme = forwardedProto?.split(",")[0]?.trim().toLowerCase() ??
+      new URL(request.url).protocol.replace(":", "").toLowerCase();
+    return (sent.protocol === "https:" || sent.protocol === "http:") &&
+      sent.protocol === scheme + ":";
   } catch {
     return false;
   }
