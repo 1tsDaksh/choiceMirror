@@ -37,7 +37,7 @@ jobs:
       - name: Check protected Nebius secret is present
         shell: bash
         env:
-          NEBIUS_API_KEY: \${{ secrets.NEBIUS_API_KEY }}
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
         run: |
           if [[ -z "$NEBIUS_API_KEY" ]]; then
             echo "::error::Configure NEBIUS_API_KEY in GitHub Actions secrets."
@@ -47,7 +47,7 @@ jobs:
         env:
           NEBIUS_LIVE: "1"
           NEBIUS_CASE_STUDY: "1"
-          NEBIUS_API_KEY: \${{ secrets.NEBIUS_API_KEY }}
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
         run: pnpm exec playwright test --config playwright.live.config.ts tests/live/case-study.spec.ts
       - name: Preserve redacted run metadata and real PNG screenshots
         if: always()
