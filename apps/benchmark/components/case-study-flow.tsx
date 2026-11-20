@@ -23,7 +23,7 @@ export function CaseStudyFlow({ scenario, seed }: Props) {
   const goal = step ? scenario.goals.find((g) => g.id === step.goalId) : undefined;
   const actions = step ? flow.goals[step.goalId] ?? [] : [];
   const currentAction = actions[step?.index ?? 0];
-  const panel = panels[step?.index ?? 0];
+  const panel = panels[step?.index ?? 0] ?? panels[0];
   const progress = step ? step.complete ? 100 : Math.round(step.index / actions.length * 100) : 0;
   const variant = scenario.id === "membership-copy-variant";
 
