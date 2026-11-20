@@ -12,6 +12,9 @@ export const metadata: Metadata = {
     "Compare opposing user journeys with inspectable browser evidence.",
 };
 
+// Public demo configuration is supplied at runtime by Railway, not at build time.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{
