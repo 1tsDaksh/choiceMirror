@@ -16,7 +16,9 @@ I wanted a way to compare the two journeys **using evidence rather than opinions
 
 ChoiceMirror runs the two sides of a choice in controlled browser sessions and measures the recorded action burden.
 
-I created four synthetic scenarios: **membership** (join / leave) and **consent** (accept / reject), each with **balanced** and **asymmetric** versions. They give the tool a meaningful positive control: it should report equality when the paths are equal, rather than always manufacturing a finding.
+I created four original synthetic scenarios: **membership** (join / leave) and **consent** (accept / reject), each with **balanced** and **asymmetric** versions. They give the tool a meaningful positive control: it should report equality when the paths are equal, rather than always manufacturing a finding.
+
+The fictional OrbitPass case study adds a realistic subscription journey informed by the FTC's historical description of multi-page cancellation, with a semantically equivalent reworded variant. The pages are original synthetic examples, not a reproduction of any real company's current service. The reworded variant can distinguish a brittle fixed-selector baseline from observation-driven navigation; real Nebius results will be reported only after genuine model inference is verified.
 
 After both journeys finish, the comparison dashboard displays their action counts, difference, ratio, mirrored timelines and original screenshots. Every finding links back to the evidence used to calculate it. If a run is incomplete or corrupt, the system reports insufficient evidence rather than pretending the two sides were equally easy.
 

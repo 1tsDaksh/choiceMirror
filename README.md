@@ -8,7 +8,7 @@ ChoiceMirror is my evidence-first tool for comparing the friction on opposite si
 
 I maintain this repository at [@1tsDaksh](https://github.com/1tsDaksh). The demo is live on Railway; the source, tests and validation records are available here.
 
-> **Scope:** The current product evaluates four deliberately designed **synthetic benchmark scenarios**, not arbitrary websites. Differences in action counts do not establish intent, illegal conduct, or accessibility compliance.
+> **Scope:** The current product evaluates four original synthetic scenarios plus two fictional, historically informed cancellation case studies—not arbitrary websites. Differences in action counts do not establish intent, illegal conduct, or accessibility compliance.
 
 ## Screenshots
 
@@ -27,6 +27,14 @@ I maintain this repository at [@1tsDaksh](https://github.com/1tsDaksh). The demo
 4. Inspect the comparison dashboard: action counts, mirrored journey timelines, screenshots, model-reported decisions and the methodology behind the finding.
 
 The hosted service uses a private server-side Nebius key. To protect credits and keep runs reproducible, the public demo limits usage to **12 AI comparison requests per UTC day**, **30 total comparisons per day**, **3 requests per visitor**, and **one running comparison at a time** by default. Visitors cannot provide arbitrary URLs or prompts. These limits may cause a temporary `429` response; [the verified recording workflow](docs/submission/VIDEO_RECORDING.md) offers an alternative walkthrough.
+
+## Documented-pattern cancellation case study
+
+I added **OrbitPass**, a completely fictional streaming subscription interface informed by the FTC's historically documented concerns about multi-screen cancellations. Joining takes one action, whereas cancellation passes through five review, offer and confirmation steps. The counts must come from real recorded Playwright browser events.
+
+A reworded variation keeps the same underlying task but changes every call-to-action label. A deliberately brittle fixed-label script cannot traverse the changed copy without maintenance; the product's observation-driven navigation can be evaluated on that new page. **Mock-based CI is not real Nebius proof**. A separately gated real-model test records actual success or failure.
+
+[Case study and experimental method](docs/submission/CASE_STUDY.md) · [FTC public source](https://www.ftc.gov/news-events/news/press-releases/2023/06/ftc-takes-action-against-amazon-enrolling-consumers-amazon-prime-without-consent-sabotaging-their)
 
 ## Example results
 

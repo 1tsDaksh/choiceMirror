@@ -30,6 +30,19 @@ export default function HomePage() {
         </section>
       ) : null}
 
+      <section className="rounded-2xl border border-journey-a/30 bg-journey-a/5 p-5 sm:p-6" aria-labelledby="case-study-heading">
+        <p className="font-mono text-xs uppercase tracking-widest text-journey-a">New · documented-pattern case study</p>
+        <h2 id="case-study-heading" className="mt-2 text-xl font-semibold">What if joining took one action, but cancelling took five?</h2>
+        <p className="mt-2 max-w-3xl text-sm text-secondary-text">
+          Try OrbitPass: a fictional subscription journey informed by historical regulatory
+          reporting about multi-screen cancellations. Then try the same task with every
+          button reworded. Only the isolated local benchmark is accessed.
+        </p>
+        <a href="https://www.ftc.gov/news-events/news/press-releases/2023/06/ftc-takes-action-against-amazon-enrolling-consumers-amazon-prime-without-consent-sabotaging-their"
+           target="_blank" rel="noopener noreferrer"
+           className="mt-3 inline-block rounded-lg text-sm font-semibold text-highlight underline">Read the original FTC source</a>
+      </section>
+
       <ScenarioLauncher initialScenarios={scenarios} publicDemo={publicDemo} />
 
       <section aria-labelledby="evidence-heading" className="space-y-4">
