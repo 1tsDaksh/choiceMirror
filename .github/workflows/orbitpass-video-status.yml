@@ -28,10 +28,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p docs/submission
-          gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq             '[.artifacts[] | {id,name,size_in_bytes,expired,created_at,html_url: ("https://github.com/" + env.REPO + "/actions/runs/" + env.RUN_ID + "/artifacts/" + (.id|tostring))}]'             > "$RUNNER_TEMP/video-artifacts.json"
+          gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" > "$RUNNER_TEMP/video-artifacts.json"
           python3 - <<'PY'
           import json, os, datetime, pathlib
-          artifacts=json.loads(pathlib.Path(os.environ["RUNNER_TEMP"]).joinpath("video-artifacts.json").read_text())
+          source=json.loads(pathlib.Path(os.environ["RUNNER_TEMP"]).joinpath("video-artifacts.json").read_text())
+          artifacts=[{"id":a["id"],"name":a["name"],"size_in_bytes":a.get("size_in_bytes"),"expired":a.get("expired"),"created_at":a.get("created_at"),"html_url":"https://github.com/"+os.environ["REPO"]+"/actions/runs/"+os.environ["RUN_ID"]+"/artifacts/"+str(a["id"])} for a in source.get("artifacts",[])]
           outcome={"runId":int(os.environ["RUN_ID"]),"runUrl":"https://github.com/"+os.environ["REPO"]+"/actions/runs/"+os.environ["RUN_ID"],"conclusion":os.environ["RUN_RESULT"],"sourceCommit":os.environ["RUN_SHA"],"recordedAtUtc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"artifacts":artifacts}
           pathlib.Path("docs/submission/ORBITPASS_VIDEO_CAPTURE_STATUS.json").write_text(json.dumps(outcome,indent=2)+"\n")
           PY
