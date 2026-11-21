@@ -6,3 +6,6 @@ scene cues and redacted run metadata. No public URLs or uncontrolled model calls
 The private GitHub NEBIUS_API_KEY secret must never appear in code or artifacts.
 After recording, remove this marker and the push trigger, retaining manual-only capture.
 Requested for the SLAY HACKS 2026 submission, 20 November 2026.
+
+## Retake 2 — 21 November 2026
+First capture passed real AI and evidence checks but frame review found a blank X11 foreground for the first 17 seconds. Request a corrected recording with a visible-browser preflight and white-intro guard. The original evidence is retained; no new scenarios.
