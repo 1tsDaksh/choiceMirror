@@ -239,7 +239,7 @@ async function waitForVisibleDesktop(page) {
     try {
       const ids = execFileSync("xdotool", [
         "search", "--onlyvisible", "--class", "chromium|chrome",
-      ], { encoding: "utf8", timeout: 3000 }).trim().split(/\\s+/).filter(Boolean);
+      ], { encoding: "utf8", timeout: 3000 }).trim().split(/\s+/).filter(Boolean);
       if (ids.length) {
         execFileSync("xdotool", ["windowactivate", "--sync", ids.at(-1)], { timeout: 3000 });
       }
