@@ -1,0 +1,43 @@
+name: Publish OrbitPass capture status
+on:
+  workflow_run:
+    workflows: ["Capture final silent OrbitPass real AI video"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  record-status:
+    if: github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Save real recording run and artifact IDs without credentials
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_RESULT: ${{ github.event.workflow_run.conclusion }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/submission
+          gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq             '[.artifacts[] | {id,name,size_in_bytes,expired,created_at,html_url: ("https://github.com/" + env.REPO + "/actions/runs/" + env.RUN_ID + "/artifacts/" + (.id|tostring))}]'             > "$RUNNER_TEMP/video-artifacts.json"
+          python3 - <<'PY'
+          import json, os, datetime, pathlib
+          artifacts=json.loads(pathlib.Path(os.environ["RUNNER_TEMP"]).joinpath("video-artifacts.json").read_text())
+          outcome={"runId":int(os.environ["RUN_ID"]),"runUrl":"https://github.com/"+os.environ["REPO"]+"/actions/runs/"+os.environ["RUN_ID"],"conclusion":os.environ["RUN_RESULT"],"sourceCommit":os.environ["RUN_SHA"],"recordedAtUtc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"artifacts":artifacts}
+          pathlib.Path("docs/submission/ORBITPASS_VIDEO_CAPTURE_STATUS.json").write_text(json.dumps(outcome,indent=2)+"\n")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/submission/ORBITPASS_VIDEO_CAPTURE_STATUS.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "docs(video): record genuine OrbitPass capture result"
+          git push origin HEAD:main
