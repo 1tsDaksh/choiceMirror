@@ -230,6 +230,40 @@ async function previewVariation(page) {
   return { checkedLabel: "Review membership details", oldLabelMatches, replacementLabel: "View account options" };
 }
 
+// Check the actual X11 desktop before recording. Chromium can become visibly
+// mapped several seconds after its DevTools page reports ready; without this
+// check the first segment may contain only the blank virtual desktop.
+async function waitForVisibleDesktop(page) {
+  for (let attempt = 0; attempt < 35; attempt += 1) {
+    await page.bringToFront();
+    try {
+      const ids = execFileSync("xdotool", [
+        "search", "--onlyvisible", "--class", "chromium|chrome",
+      ], { encoding: "utf8", timeout: 3000 }).trim().split(/\s+/).filter(Boolean);
+      if (ids.length) {
+        execFileSync("xdotool", ["windowactivate", "--sync", ids.at(-1)], { timeout: 3000 });
+      }
+    } catch { /* Chromium may not be mapped yet. */ }
+    try {
+      const frame = execFileSync("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-f", "x11grab",
+        "-video_size", "1440x900", "-i", process.env.DISPLAY + ".0+0,0",
+        "-frames:v", "1", "-vf", "scale=32:32,format=gray",
+        "-f", "rawvideo", "-",
+      ], { timeout: 8000, maxBuffer: 256 * 1024 });
+      const brightness = [...frame].reduce((sum, value) => sum + value, 0) / frame.length;
+      const whiteShare = [...frame].filter(value => value > 240).length / frame.length;
+      if (frame.length === 1024 && brightness < 175 && whiteShare < 0.6) {
+        console.log("Visible desktop preflight passed; brightness=" + brightness.toFixed(1));
+        await sleep(700);
+        return;
+      }
+    } catch { /* X11 framebuffer is not ready. */ }
+    await sleep(1000);
+  }
+  throw new Error("Desktop stayed white/blank; refusing to record unusable intro.");
+}
+
 try {
   browser = await chromium.launch({
     headless: false,
@@ -243,6 +277,7 @@ try {
   const page = await ctx.newPage();
   await page.goto(origin, { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Does this interface make both choices equally easy?" }).waitFor({ timeout: 45000 });
+  await waitForVisibleDesktop(page);
   const video = resolve(dir, "choicemirror-orbitpass-" + mode + "-screen.mp4");
   recorder = spawn("ffmpeg", [
     "-y", "-f", "x11grab", "-draw_mouse", "1", "-framerate", "24",

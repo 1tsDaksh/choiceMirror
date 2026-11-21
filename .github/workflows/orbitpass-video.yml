@@ -33,7 +33,7 @@ jobs:
         run: |
           pnpm exec playwright install --with-deps chromium
           sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb openbox ffmpeg
+          sudo apt-get install -y -qq xvfb openbox ffmpeg xdotool
       - name: Guard live AI credentials without printing them
         shell: bash
         env:
@@ -127,6 +127,8 @@ jobs:
                       capture_output=True, check=True).stdout
                   if len(frame) != 1024 or statistics.pstdev(frame) < 8:
                       raise SystemExit("Video has a blank/unreadable frame")
+                  if fraction == 0.12 and sum(p > 240 for p in frame) / len(frame) > 0.60:
+                      raise SystemExit("Video opening is blank white desktop")
                   samples.append(hashlib.sha256(frame).hexdigest())
               if len(set(samples)) < 3:
                   raise SystemExit("Video is frozen; refused to deliver")
